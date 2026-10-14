@@ -9,7 +9,10 @@
 <link rel="icon" href="icon-small.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="Exchange Diary">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="交換日記">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#181816" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
@@ -28,6 +31,7 @@
 <link id="gfonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Quicksand:wght@300;500;600&family=Jost:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,500&family=Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Cactus+Classical+Serif&family=Iansui&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="app.css">
+<script>if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </head>
 <body>
 <noscript><p style="padding:24px;font:16px/1.6 sans-serif">這個工具需要開啟 JavaScript 才能使用。</p></noscript>

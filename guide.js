@@ -5,7 +5,7 @@
 const APP_VERSION="1.0（2026.10）";
 const NOTICE=[
   ["日記只存在你的裝置","日記、照片和設定都保存在這台裝置的瀏覽器裡，不會上傳到任何伺服器，作者也看不到你的內容。"],
-  ["請定期備份","清除瀏覽器資料、使用無痕模式、換手機或電腦，資料都可能消失而且無法救回。請定期用「備份 → 匯出備份檔」存一份到自己的資料夾或雲端。"],
+  ["請定期備份","清除瀏覽器資料、使用無痕模式、換手機或電腦，資料都可能消失而且無法救回。請定期用「備份 → 匯出備份檔」存一份到自己的資料夾或雲端。換手機、換瀏覽器，或改從主畫面打開，都會是一本新的日記本，要用備份檔把內容搬過去。"],
   ["作者不負保管責任","這個工具免費提供，照現況使用。因為裝置、瀏覽器或操作造成的資料遺失或損壞，作者無法負責，也沒有辦法幫你找回。"],
   ["內容與授權由你負責","放進日記的文字、照片、貼紙，以及自己上傳的字體，請確認你有權使用；要分享或拿去印刷前，也請先問過一起寫日記的人。"],
   ["輸出與印刷","螢幕和印刷的顏色會有落差；送印前請先確認印刷廠的規格。"]
@@ -23,8 +23,23 @@ function firstRun(){
     <div class="row"><button type="button" class="link" data-act="about" style="margin-right:auto">看完整說明與授權</button><button type="button" class="btn solid" data-act="ok">我知道了，開始寫日記</button></div>`);
   dlg.querySelector('[data-act="ok"]').focus({preventScroll:true});dlg.scrollTop=0;
   const done=()=>{meta.noticeSeen=true;Store.set("meta",meta)};
-  dlg.querySelector('[data-act="ok"]').onclick=()=>{done();closeDialog(true);if(!meta.tourSeen) setTimeout(()=>tour(0),300)};
+  dlg.querySelector('[data-act="ok"]').onclick=()=>{done();closeDialog(true);setTimeout(afterNotice,300)};
   dlg.querySelector('[data-act="about"]').onclick=()=>{done();about(true)};
+}
+/* opened from the home screen: a separate notebook from the browser's, so ask before anything else */
+const STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const onlySample=()=>book.spreads.length===1&&!!book.spreads[0].sample;
+function afterNotice(){
+  if(STANDALONE&&onlySample()&&!meta.homeSeen){homeNote();return}
+  if(!meta.tourSeen) tour(0);
+}
+function homeNote(){
+  openDialog(`<h2 id="dlg-title">從主畫面打開的日記本</h2>
+    <p>從主畫面打開的日記本，和在瀏覽器（Safari、Chrome 等）裡打開的是分開的。如果你之前在瀏覽器裡寫過，請先回到那個瀏覽器匯出備份，再到這裡匯入。</p>
+    <div class="row"><button type="button" class="btn quiet" data-act="new">我是第一次用</button><button type="button" class="btn solid" data-act="imp">我要匯入備份</button></div>`);
+  const done=()=>{meta.homeSeen=true;Store.set("meta",meta)};
+  dlg.querySelector('[data-act="new"]').onclick=()=>{done();closeDialog(true);if(!meta.tourSeen) setTimeout(()=>tour(0),300)};
+  dlg.querySelector('[data-act="imp"]').onclick=()=>{done();closeDialog(true);meta.tourSeen=true;Store.set("meta",meta);setTimeout(()=>$("#btn-import").click(),200)};
 }
 
 /* ---------- 關於 ---------- */
@@ -36,11 +51,15 @@ function about(fromNotice){
     <details><summary>內建字體（皆為 SIL Open Font License 1.1）</summary>
       <table class="ab-t">${FONT_CREDITS.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("")}</table>
       <p>OFL 字體可以免費使用、嵌入網頁與 PDF，也可以用在印刷品上，但不能單獨販售字體檔。</p></details>
+    <details><summary>加到主畫面</summary>
+      <p>可以把這個工具加到手機主畫面，像 App 一樣打開；沒有網路時也能打開來寫。</p>
+      <p>iPhone：在 Safari 或 Chrome 按「分享」→「加入主畫面」。Android：在 Chrome 按右上角選單 →「加到主畫面」或「安裝應用程式」。</p>
+      <p><b>請注意：</b>從主畫面打開的日記本，和在瀏覽器（Safari、Chrome 等）裡打開的是分開的。如果你之前在瀏覽器裡寫過，請先回到那個瀏覽器匯出備份，再到主畫面版匯入。</p></details>
     <details><summary>你上傳的字體</summary><p>只保存在這台裝置，不會放進備份檔，也不會放進翻書網頁或圖片（文字會畫成圖片）。存成 PDF 時，瀏覽器會把用到的字嵌入檔案，請確認字體授權允許。</p></details>
     <details><summary>程式元件</summary><p>html-to-image（MIT License），用來把頁面畫成圖片。</p></details>
     <div class="row"><button type="button" class="link" data-act="tour" style="margin-right:auto">重看使用說明</button><button type="button" class="btn solid" data-act="ok">${fromNotice?"我知道了，開始寫日記":"關閉"}</button></div>`);
   dlg.querySelector('[data-act="ok"]').focus({preventScroll:true});dlg.scrollTop=0;
-  dlg.querySelector('[data-act="ok"]').onclick=()=>{closeDialog(true);if(fromNotice&&!meta.tourSeen) setTimeout(()=>tour(0),300)};
+  dlg.querySelector('[data-act="ok"]').onclick=()=>{closeDialog(true);if(fromNotice) setTimeout(afterNotice,300)};
   dlg.querySelector('[data-act="tour"]').onclick=()=>{closeDialog(true);setTimeout(()=>tour(0),250)};
 }
 document.querySelector(".sig").insertAdjacentHTML("beforeend",`<div class="sig-links"><button type="button" class="link" id="lnk-tour">使用說明</button><button type="button" class="link" id="lnk-about">關於與授權</button></div>`);

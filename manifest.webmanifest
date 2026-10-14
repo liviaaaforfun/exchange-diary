@@ -1,0 +1,15 @@
+{
+  "name": "Exchange Diary｜交換心情，寫下生活",
+  "short_name": "交換日記",
+  "description": "給你和戀人的交換日記本。日記只存在你的裝置裡。",
+  "lang": "zh-Hant-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f5f1",
+  "theme_color": "#f6f5f1",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
