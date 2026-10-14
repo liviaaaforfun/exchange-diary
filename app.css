@@ -596,3 +596,5 @@ body.zoomed .sr-bar{top:calc(env(safe-area-inset-top,0px) + 56px)}
   .sheet-tabs button{min-height:38px;padding:6px 0}
   .sheet-h .grab{height:16px}
 }
+/* a little air between the big title and the diary's own name */
+.book-sub{margin-top:clamp(6px,1.1vw,14px)}

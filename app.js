@@ -429,7 +429,7 @@ function refreshNav(){
       <em>No.${pad(i+1)}</em>${m&&+m[1]>=1&&+m[1]<=12?`<strong>${pad(m[2])}</strong><small>${MON[m[1]-1]}</small>`:`<strong class="nd">未填</strong><small>&nbsp;</small>`}<u aria-hidden="true"></u></button>`}).join("");
   chipsInView();
   $("#move-prev").disabled=cur===0;$("#move-next").disabled=cur===book.spreads.length-1;
-  $("#sample-note").hidden=!book.spreads[cur].sample;
+  $("#sample-note").hidden=true;          // the first-visit tour says this instead (guide.js)
 }
 /* finished spreads are locked; "修改" opens one again and keeps a copy to fall back on */
 function applyLock(){

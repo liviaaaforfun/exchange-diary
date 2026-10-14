@@ -49,7 +49,7 @@ $("#lnk-about").addEventListener("click",()=>about(false));
 
 /* ---------- the tour: the page dims, one part stays lit, a small card says what it is for ---------- */
 const TOUR=[
-  {sel:"#btn-paste",title:"貼上日記",text:"把寫好的日記整段貼進來，日期、心情、日記會自動放進各欄位。也可以直接點頁面打字。",below:true},
+  {sel:"#btn-paste",title:"開始寫日記",text:"畫面上先放了一頁範例，可以直接點進去修改；或把寫好的日記整段貼進來，日期、心情、日記會自動放進各欄位。",below:true},
   {sel:'.card[aria-labelledby="h-type"]',tab:"type",title:"調整文字",text:"字體、字級、行數都在這裡；在頁面上選取文字，還能加粗、換顏色、畫螢光筆。"},
   {sel:'.card[aria-labelledby="h-mat"]',tab:"mat",title:"放上素材",text:"照片、便利貼、紙膠帶和貼紙。拖曳移動、拉四角縮放、上方圓點旋轉；手機上也可以兩指縮放、轉動。"},
   {sel:".dock",close:true,title:"完成與輸出",text:"寫好按「完成這次交換」鎖定；「輸出」存成圖片、PDF 或翻書網頁；記得用「備份」定期存一份。"}
