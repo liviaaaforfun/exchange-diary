@@ -598,3 +598,4 @@ body.zoomed .sr-bar{top:calc(env(safe-area-inset-top,0px) + 56px)}
 }
 /* a little air between the big title and the diary's own name */
 .book-sub{margin-top:clamp(6px,1.1vw,14px)}
+.fxbar.kb-dock{transform-origin:0 0;max-width:none;border-inline:0;border-bottom:0;box-shadow:0 -6px 18px -10px var(--shadow)}

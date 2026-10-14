@@ -267,20 +267,43 @@ function applyFx(op,v){
   try{r.setStart(n1,o1);r.setEnd(n2,o2);sel.removeAllRanges();sel.addRange(r)}catch(e){}
   grabSel();showBar();touch();scheduleFit();
 }
+/* phones. Where the browser tells us the keyboard is open (a normal browser tab), the bar sits on top of the
+   keyboard like a notes app's format bar. Where it cannot tell (inside some app previews), the bar floats by the
+   words, on the side the phone's own copy/paste menu is not: that menu goes above the words when there is room
+   and below them when the words are near the top of the screen. */
+let visMax=0,visW=0;
+const kbOpen=()=>{const vv=window.visualViewport;if(!vv) return false;
+  const vis=vv.height*vv.scale,wid=Math.round(vv.width*vv.scale);
+  if(Math.abs(wid-visW)>20){visW=wid;visMax=0}                     // turned the phone: start over
+  if(vis>visMax) visMax=vis;
+  return vis<visMax*.78};
+if(window.visualViewport) kbOpen();
+if(window.visualViewport) visualViewport.addEventListener("resize",()=>{const a=document.activeElement;
+  if(!(a&&a.isContentEditable)) visMax=Math.max(visMax,visualViewport.height*visualViewport.scale)});
+function phoneBar(R){
+  const vv=window.visualViewport;
+  if(vv&&kbOpen()){
+    const sc=vv.scale||1;fxbar.classList.add("kb-dock");
+    fxbar.style.width=(vv.width*sc)+"px";fxbar.style.transform=sc!==1?`scale(${1/sc})`:"";
+    const h=fxbar.offsetHeight/sc;
+    fxbar.style.left=vv.offsetLeft+"px";fxbar.style.top=(vv.offsetTop+vv.height-h)+"px";return;
+  }
+  fxbar.classList.remove("kb-dock");fxbar.style.width="";fxbar.style.transform="";
+  const w=fxbar.offsetWidth,h=fxbar.offsetHeight,visTop=vv?vv.offsetTop:0,bottom=vv?Math.min(innerHeight,vv.offsetTop+vv.height):innerHeight;
+  const MENU=58,menuBelow=R.top-visTop<150;            // the system menu needs about this much room above the words
+  let top=R.bottom+14+(menuBelow?MENU:0);
+  if(top+h>bottom-8) top=R.top-h-14-(menuBelow?0:MENU);
+  fxbar.style.top=Math.max(visTop+8,Math.min(top,bottom-h-8))+"px";
+  fxbar.style.left=Math.max(8,Math.min(innerWidth-w-8,R.left+R.width/2-w/2))+"px";
+}
 function showBar(){
   if(!fxSel){fxbar.hidden=true;return}
   const st=fxState();
   for(const btn of fxbar.querySelectorAll("button[data-v]")) btn.setAttribute("aria-pressed",String(!!st[btn.dataset.v]));
   fxbar.hidden=false;
   const R=fxSel.rect,w=fxbar.offsetWidth,h=fxbar.offsetHeight;
-  if(innerWidth<=720){
-    /* phones: just under the selected words (the phone's own copy/paste menu sits above them), so the bar
-       stays next to what is being styled and never ends up under the on-screen keyboard */
-    const vv=window.visualViewport,bottom=vv?Math.min(innerHeight,vv.offsetTop+vv.height):innerHeight;
-    let top=R.bottom+14;if(top+h>bottom-8) top=R.top-h-58;
-    fxbar.style.top=Math.max(8,Math.min(top,bottom-h-8))+"px";fxbar.style.left=Math.max(8,Math.min(innerWidth-w-8,R.left+R.width/2-w/2))+"px";
-    return;
-  }
+  if(innerWidth<=720){phoneBar(R);return}
+  fxbar.classList.remove("kb-dock");fxbar.style.width="";fxbar.style.transform="";
   let top=R.top-h-10;if(top<8||!fxSel.el.dataset.field) top=R.bottom+10;
   fxbar.style.top=Math.min(top,innerHeight-h-8)+"px";
   fxbar.style.left=Math.max(8,Math.min(innerWidth-w-8,R.left+R.width/2-w/2))+"px";
