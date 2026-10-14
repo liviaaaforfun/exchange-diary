@@ -229,8 +229,19 @@ select:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .fxbar [data-v="h1"] i{background:#f3d860}.fxbar [data-v="h2"] i{background:#f0a3b6}.fxbar [data-v="h3"] i{background:#93d3b1}.fxbar [data-v="h4"] i{background:#93c1ea}
 .hint.tip{padding-top:4px}
 @media (max-width:720px){
-  .fxbar{max-width:calc(100vw - 16px);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
-  .fxbar::-webkit-scrollbar{display:none}
+  /* the style card: two rows, rounded, never wider than the screen */
+  .fxbar{transform-origin:0 0;max-width:none;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"size bs clear" "col col hl";
+    border:1px solid var(--line);border-radius:18px;padding:4px 10px;box-shadow:0 10px 26px -10px var(--shadow)}
+  .fxbar[hidden]{display:none}
+  .fxbar .grp{border-left:0;align-items:center;height:46px}
+  .fxbar .grp:nth-child(1){grid-area:size}.fxbar .grp:nth-child(2){grid-area:bs;justify-content:center}.fxbar .grp:nth-child(5){grid-area:clear;justify-content:flex-end}
+  .fxbar .grp:nth-child(3){grid-area:col;border-top:1px solid var(--soft)}.fxbar .grp:nth-child(4){grid-area:hl;border-top:1px solid var(--soft);justify-content:flex-end}
+  .fxbar button{min-width:38px;height:42px;font-size:15px}
+  .fxbar [data-op="clear"]{color:var(--muted);font-size:14px}
+  .fxaa{position:fixed;z-index:41;width:48px;height:48px;border-radius:50%;border:0;background:var(--ink);color:var(--accent-ink);
+    font:600 18px/1 var(--display);box-shadow:0 6px 16px -4px rgba(0,0,0,.35);transform-origin:0 0;cursor:pointer}
+  .fxaa.on{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1.5px var(--ink),0 6px 16px -4px rgba(0,0,0,.3)}
+  .fxaa[hidden]{display:none}
   body.kb-up .objbar{padding-bottom:0}
   .fxbar .grp{flex:none}
 }
@@ -598,4 +609,3 @@ body.zoomed .sr-bar{top:calc(env(safe-area-inset-top,0px) + 56px)}
 }
 /* a little air between the big title and the diary's own name */
 .book-sub{margin-top:clamp(6px,1.1vw,14px)}
-.fxbar.kb-dock{transform-origin:0 0;max-width:none;border-inline:0;border-bottom:0;box-shadow:0 -6px 18px -10px var(--shadow)}

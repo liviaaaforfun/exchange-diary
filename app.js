@@ -280,36 +280,48 @@ const kbOpen=()=>{const vv=window.visualViewport;if(!vv) return false;
 if(window.visualViewport) kbOpen();
 if(window.visualViewport) visualViewport.addEventListener("resize",()=>{const a=document.activeElement;
   if(!(a&&a.isContentEditable)) visMax=Math.max(visMax,visualViewport.height*visualViewport.scale)});
+/* phones: a round 「Aa」 button sits by the selection (or on top of the keyboard); a tap opens the style card above it,
+   in two rows (size, bold, strike, clear / four colours, four highlighters) */
+const fxaa=document.createElement("button");fxaa.type="button";fxaa.className="fxaa";fxaa.id="fxaa";fxaa.textContent="Aa";
+fxaa.setAttribute("aria-label","文字樣式");fxaa.setAttribute("aria-expanded","false");fxaa.hidden=true;document.body.appendChild(fxaa);
+let fxOpen=false;
+fxaa.addEventListener("pointerdown",e=>{e.preventDefault();barDown=true});fxaa.addEventListener("mousedown",e=>e.preventDefault());
+fxaa.addEventListener("click",()=>{fxOpen=!fxOpen;fxaa.setAttribute("aria-expanded",String(fxOpen));showBar();
+  /* the card should not sit on the words being styled: move the page up a little when it would */
+  if(fxOpen&&fxSel){const c=fxbar.getBoundingClientRect(),r=fxSel.rect;if(r.bottom>c.top-6&&r.top<c.bottom) scrollBy(0,r.bottom-c.top+18)}});
 function phoneBar(R){
-  const vv=window.visualViewport;
-  if(vv&&kbOpen()){
-    const sc=vv.scale||1;fxbar.classList.add("kb-dock");
-    fxbar.style.width=(vv.width*sc)+"px";fxbar.style.transform=sc!==1?`scale(${1/sc})`:"";
-    const h=fxbar.offsetHeight/sc;
-    fxbar.style.left=vv.offsetLeft+"px";fxbar.style.top=(vv.offsetTop+vv.height-h)+"px";return;
-  }
-  fxbar.classList.remove("kb-dock");fxbar.style.width="";fxbar.style.transform="";
-  const w=fxbar.offsetWidth,h=fxbar.offsetHeight,visTop=vv?vv.offsetTop:0,bottom=vv?Math.min(innerHeight,vv.offsetTop+vv.height):innerHeight;
-  const MENU=58,menuBelow=R.top-visTop<150;            // the system menu needs about this much room above the words
-  let top=R.bottom+14+(menuBelow?MENU:0);
-  if(top+h>bottom-8) top=R.top-h-14-(menuBelow?0:MENU);
-  fxbar.style.top=Math.max(visTop+8,Math.min(top,bottom-h-8))+"px";
-  fxbar.style.left=Math.max(8,Math.min(innerWidth-w-8,R.left+R.width/2-w/2))+"px";
+  const vv=window.visualViewport,sc=vv?vv.scale||1:1,kb=!!(vv&&kbOpen());
+  const vL=vv?vv.offsetLeft:0,vT=vv?vv.offsetTop:0,vW=vv?vv.width:innerWidth,vB=vv?vv.offsetTop+vv.height:innerHeight;
+  const S=48,G=12,px=n=>n/sc;                                       // sizes on screen, turned into page units
+  fxaa.hidden=false;fxaa.classList.toggle("on",fxOpen);
+  let aT;
+  if(kb) aT=vB-px(S+G);
+  else{const MENU=58,menuBelow=(R.top-vT)*sc<150;
+    aT=R.bottom+px(14+(menuBelow?MENU:0));if(aT+px(S)>vB-px(8)) aT=R.top-px(S+14+(menuBelow?0:MENU));
+    aT=Math.max(vT+px(8),Math.min(aT,vB-px(S+8)))}
+  const aL=vL+vW-px(S+14),tf=sc!==1?`scale(${1/sc})`:"";
+  Object.assign(fxaa.style,{top:aT+"px",left:aL+"px",transform:tf});
+  fxbar.hidden=!fxOpen;if(!fxOpen) return;
+  fxbar.style.width=Math.min(380,vW*sc-24)+"px";fxbar.style.transform=tf;
+  const cH=fxbar.offsetHeight;let cT;
+  if(!kb&&aT>=R.bottom){cT=aT+px(S+8);if(cT+px(cH)>vB-px(8)) cT=R.top-px(cH+14)}   // button under the words: card under the button
+  else{cT=aT-px(cH+8);if(cT<vT+px(8)) cT=aT+px(S+8)}
+  fxbar.style.top=cT+"px";fxbar.style.left=(vL+vW-px(14)-px(Math.min(380,vW*sc-24)))+"px";
 }
 function showBar(){
-  if(!fxSel){fxbar.hidden=true;return}
+  if(!fxSel){fxbar.hidden=true;fxaa.hidden=true;fxOpen=false;fxaa.setAttribute("aria-expanded","false");return}
   const st=fxState();
   for(const btn of fxbar.querySelectorAll("button[data-v]")) btn.setAttribute("aria-pressed",String(!!st[btn.dataset.v]));
   fxbar.hidden=false;
   const R=fxSel.rect,w=fxbar.offsetWidth,h=fxbar.offsetHeight;
   if(innerWidth<=720){phoneBar(R);return}
-  fxbar.classList.remove("kb-dock");fxbar.style.width="";fxbar.style.transform="";
+  fxaa.hidden=true;fxbar.style.width="";fxbar.style.transform="";
   let top=R.top-h-10;if(top<8||!fxSel.el.dataset.field) top=R.bottom+10;
   fxbar.style.top=Math.min(top,innerHeight-h-8)+"px";
   fxbar.style.left=Math.max(8,Math.min(innerWidth-w-8,R.left+R.width/2-w/2))+"px";
 }
 /* the words move when the page scrolls or the keyboard opens: the bar follows them */
-const fxFollow=()=>{if(!fxbar.hidden&&!barDown){grabSel();showBar()}};
+const fxFollow=()=>{if((!fxbar.hidden||!fxaa.hidden)&&!barDown){grabSel();showBar()}};
 addEventListener("scroll",fxFollow,{passive:true});addEventListener("resize",fxFollow);
 if(window.visualViewport){visualViewport.addEventListener("resize",fxFollow);visualViewport.addEventListener("scroll",fxFollow)}
 document.addEventListener("selectionchange",()=>{if(barDown) return;grabSel();showBar()});
