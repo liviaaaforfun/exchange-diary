@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#1f1e1c" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+<style>*{stroke:#1f1e1c}@media (prefers-color-scheme:dark){*{stroke:#ebe9e3}}</style>
+<path d="M32 52c-7-4-15-5-27-4V14c12-1 20 0 27 4 7-4 15-5 27-4v34c-12-1-20 0-27 4z"/>
+<path d="M32 18v34"/>
+<path d="M45 28c-1.6-3-6.4-2.5-6.4 1 0 2.8 3.9 5.1 6.4 6.9 2.5-1.8 6.4-4.1 6.4-6.9 0-3.5-4.8-4-6.4-1z" stroke-width="3.6"/>
+<path d="M12 27h12M12 36h9" stroke-width="3.6"/>
+</svg>

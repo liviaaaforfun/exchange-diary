@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Exchange Diary｜交換心情，寫下生活</title>
+<meta name="description" content="給你和戀人的交換日記本：把你們的日記貼進來，排成一頁頁跨頁，加上照片和貼紙，存成圖片、PDF 或翻書網頁。日記只存在你的裝置裡。">
+<link rel="canonical" href="https://liviaaaforfun.github.io/exchange-diary/">
+<link rel="icon" href="icon-small.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Exchange Diary">
+<meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181816" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Exchange Diary">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:url" content="https://liviaaaforfun.github.io/exchange-diary/">
+<meta property="og:title" content="Exchange Diary｜交換心情，寫下生活">
+<meta property="og:description" content="給你和戀人的交換日記本：把你們的日記貼進來，排成一頁頁跨頁，加上照片和貼紙，存成圖片、PDF 或翻書網頁。日記只存在你的裝置裡。">
+<meta property="og:image" content="https://liviaaaforfun.github.io/exchange-diary/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Exchange Diary：一人一頁的交換日記跨頁，貼著拍立得照片">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="gfonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Quicksand:wght@300;500;600&family=Jost:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,500&family=Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Cactus+Classical+Serif&family=Iansui&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<noscript><p style="padding:24px;font:16px/1.6 sans-serif">這個工具需要開啟 JavaScript 才能使用。</p></noscript>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sprig" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+    <path d="M6 22c3-5 5-9 11-17"/><path d="M9.6 16.4c-2.6-.4-4-2-4.2-4.3 2.4.2 3.9 1.7 4.2 4.3z"/><path d="M12.3 12.4c-.2-2.6 1-4.6 3.1-5.5.3 2.3-.8 4.3-3.1 5.5z"/>
+    <path d="M11.4 13.8c2.5-.9 4.6-.3 5.9 1.5-2.3.9-4.4.3-5.9-1.5z"/></g>
+    <g fill="currentColor"><circle cx="17.6" cy="4.3" r="1.25"/><circle cx="19.6" cy="5.4" r=".9"/><circle cx="16.4" cy="2.4" r=".9"/><circle cx="19.2" cy="3" r=".7"/></g></symbol>
+</svg>
+
+<div class="shell">
+  <header class="masthead">
+    <div class="mh-title">
+      <p class="kicker"><button type="button" class="look" id="look" aria-label="切換成深色" title="切換成深色"><svg viewBox="0 0 20 20" aria-hidden="true"><g class="rays"><path d="M10 1.2v1.4M3.6 3.8l1 1M16.4 3.8l-1 1M1.6 9.6H3M17 9.6h1.4"/></g><path d="M10 4.2a5.2 5.2 0 0 0-3.1 9.4c.6.5.9 1.1.9 1.8v.3h4.4v-.3c0-.7.3-1.3.9-1.8A5.2 5.2 0 0 0 10 4.2z"/><path d="M8 17.9h4"/><path class="fil" d="M8.6 12.6 10 10.4l1.4 2.2"/></svg></button><span>交換心情，寫下生活</span></p>
+      <h1 class="book-title">Exchange Diary</h1>
+      <label class="sr-only" for="book-sub">日記名稱</label>
+      <input id="book-sub" class="book-sub" type="text" autocomplete="off" spellcheck="false" placeholder="寫下你們的日記名稱，例如：周家小日記" title="點一下修改日記名稱">
+    </div>
+    <nav class="views" aria-label="畫面">
+      <button type="button" class="view" data-view="edit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4l3 3L7.2 15.8l-3.9.9.9-3.9z"/><path d="M11.8 5.2l3 3"/></svg>寫日記</button>
+      <button type="button" class="view" data-view="read"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.6C8.4 4.4 6 4 3 4.2v10.6c3-.2 5.4.2 7 1.4 1.6-1.2 4-1.6 7-1.4V4.2c-3-.2-5.4.2-7 1.4z"/><path d="M10 5.6v10.6"/></svg>讀日記</button>
+      <button type="button" class="view" data-view="photos"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="2.8" width="12" height="14.4" rx=".6"/><path d="M6 4.8h8v8.2H6z"/></svg>翻照片</button>
+    </nav>
+  </header>
+
+  <div class="notice" id="notice" hidden>
+    <p>日記內容只存在這台裝置的瀏覽器裡，不會上傳到任何地方。清除瀏覽器資料或換裝置就會不見，請定期用「備份」匯出一份檔案。</p>
+    <button type="button" class="btn" id="notice-ok">知道了</button>
+  </div>
+
+  <div class="workspace">
+    <main class="stage">
+      <div class="stage-bar">
+        <div class="chips" id="chips" role="tablist" aria-label="跨頁"></div>
+        <button type="button" class="add-leaf" id="add-spread" aria-label="新增跨頁"><em>NEW</em><strong aria-hidden="true">＋</strong><small>新增</small></button>
+      </div>
+      <div class="spread-bar">
+        <p class="sr-only" id="spread-state" role="status"></p>
+        <div class="spread-tools">
+          <button type="button" class="link" id="btn-paste">貼上內容</button>
+          <button type="button" class="link" id="move-prev">往前移</button>
+          <button type="button" class="link" id="move-next">往後移</button>
+          <button type="button" class="link danger" id="del-spread">刪除跨頁</button>
+        </div>
+      </div>
+      <div class="sample-note" id="sample-note" hidden>這是範例內容，可以直接點進去修改，或用「貼上內容」換成你們的日記。</div>
+      <div class="rd-top" id="rd-top"><button type="button" class="backchip" id="rd-back" hidden>← 回到照片牆</button>
+        <div class="rd-meta"><b id="rd-no"></b><span id="rd-info"></span></div>
+        <button type="button" class="btn ghost" id="rd-edit">修改這個跨頁</button></div>
+      <div class="sidepick" role="group" aria-label="顯示哪一頁"><div class="slide" id="seg-show"><i class="thumb" aria-hidden="true"></i><button type="button" data-v="them">他的日記</button><button type="button" data-v="me">我的日記</button><button type="button" data-v="both" class="wide-only">並排</button></div></div>
+      <div class="book" id="book"><button type="button" class="gswap" id="gswap" aria-label="左右頁對調（整本）" title="左右頁對調（整本）" hidden>⇄</button><div class="spread" id="spread">
+        <svg class="clay-defs" width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+          <radialGradient id="cg1" gradientUnits="userSpaceOnUse" cx="15" cy="12" r="26"><stop offset="0" style="stop-color:color-mix(in srgb,var(--c1) 30%,#fff)"/><stop offset=".5" style="stop-color:var(--c1)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--c1) 80%,#203030)"/></radialGradient>
+          <radialGradient id="cg2" gradientUnits="userSpaceOnUse" cx="15" cy="12" r="26"><stop offset="0" style="stop-color:color-mix(in srgb,var(--c2) 30%,#fff)"/><stop offset=".5" style="stop-color:var(--c2)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--c2) 82%,#402030)"/></radialGradient>
+          <radialGradient id="cgs" gradientUnits="userSpaceOnUse" cx="15" cy="12" r="26"><stop offset="0" style="stop-color:color-mix(in srgb,var(--sky) 30%,#fff)"/><stop offset=".5" style="stop-color:var(--sky)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--sky) 80%,#203040)"/></radialGradient>
+          <radialGradient id="cgw" gradientUnits="userSpaceOnUse" cx="15" cy="12" r="26"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" style="stop-color:color-mix(in srgb,var(--c3) 55%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--c3) 85%,#504060)"/></radialGradient>
+          <radialGradient id="cgb" gradientUnits="userSpaceOnUse" cx="15" cy="12" r="26"><stop offset="0" stop-color="#fff9e2"/><stop offset=".5" stop-color="#f6e0a2"/><stop offset="1" stop-color="#dcbd6e"/></radialGradient>
+          <filter id="cblur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".9"/></filter>
+        </defs>
+        <symbol id="cl-heart" viewBox="0 0 40 40"><path d="M20 35C9 27 4.5 20.5 6 14 7.5 7.5 15 6 20 12.5 25 6 32.5 7.5 34 14 35.5 20.5 31 27 20 35Z" fill="url(#cg2)"/><ellipse cx="13" cy="13.5" rx="3.6" ry="2.2" transform="rotate(-30 13 13.5)" fill="#fff" opacity=".65" filter="url(#cblur)"/></symbol>
+        <symbol id="cl-cloud" viewBox="0 0 40 40"><g fill="url(#cgw)"><circle cx="13" cy="23" r="8"/><circle cx="22" cy="18" r="10"/><circle cx="30.5" cy="24" r="7"/><rect x="9" y="22" width="25" height="9" rx="4.5"/></g><ellipse cx="18" cy="13" rx="4" ry="2" fill="#fff" opacity=".8" filter="url(#cblur)"/></symbol>
+        <symbol id="cl-sphere" viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" fill="url(#cgs)"/><ellipse cx="15" cy="14" rx="4" ry="2.6" transform="rotate(-30 15 14)" fill="#fff" opacity=".65" filter="url(#cblur)"/></symbol>
+        <symbol id="cl-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11" fill="none" stroke="url(#cg2)" stroke-width="7"/><path d="M11.5 14.5a10.5 10.5 0 0 1 7-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7" filter="url(#cblur)"/></symbol>
+        <symbol id="cl-star" viewBox="0 0 40 40"><path d="M20 6 23.9 15 33.3 15.7 26.2 21.9 28.3 31.1 20 26.2 11.7 31.1 13.8 21.9 6.7 15.7 16.1 15Z" fill="url(#cgb)" stroke="url(#cgb)" stroke-width="4" stroke-linejoin="round"/><ellipse cx="16" cy="14" rx="2.6" ry="1.5" fill="#fff" opacity=".7" filter="url(#cblur)"/></symbol>
+        <symbol id="cl-pencil" viewBox="0 0 40 40"><g transform="rotate(-38 20 20)"><rect x="9" y="16" width="20" height="8" rx="1.6" fill="url(#cg1)"/><rect x="28.4" y="16" width="3" height="8" fill="#ece6ef"/><rect x="30.5" y="16" width="5" height="8" rx="2.4" fill="url(#cg2)"/><path d="M9.4 16 3 20 9.4 24Z" fill="#f6e6cf"/><path d="M3 20 5.4 18.5 5.4 21.5Z" style="fill:var(--label)"/><rect x="10" y="17.2" width="17" height="1.6" rx=".8" fill="#fff" opacity=".55"/></g></symbol>
+        <symbol id="cl-envelope" viewBox="0 0 40 40"><rect x="5" y="10" width="30" height="21" rx="3.5" fill="url(#cg2)"/><path d="M7.5 13.5 20 22.5 32.5 13.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/><circle cx="20" cy="23" r="2.8" fill="url(#cg1)"/><ellipse cx="11" cy="13" rx="3" ry="1.2" fill="#fff" opacity=".55" filter="url(#cblur)"/></symbol>
+      </svg>
+      </div></div>
+      <button type="button" class="rd-arrow rd-prev" id="rd-prev" aria-label="上一個跨頁">‹</button>
+      <button type="button" class="rd-arrow rd-next" id="rd-next" aria-label="下一個跨頁">›</button>
+      <nav class="rd-strip" id="rd-strip" aria-label="所有跨頁"></nav>
+      <p class="caption">A5 · 單頁 148 × 210 mm · 跨頁 296 × 210 mm</p>
+    </main>
+
+    <aside class="panel" aria-label="設定">
+      <section class="card" aria-labelledby="h-style">
+        <h2 class="card-h" id="h-style"><em>style</em>風格</h2>
+        <div class="tabs" id="theme-tabs" role="tablist" aria-label="風格">
+          <button type="button" role="tab" data-v="country">法式鄉村</button><button type="button" role="tab" data-v="pastel">粉彩文具</button><button type="button" role="tab" data-v="editorial">日系生活誌</button><button type="button" role="tab" data-v="gazette">文學報刊</button>
+        </div>
+        <div class="field"><span class="fl">配色</span><div class="dots-row" id="color-dots" role="radiogroup" aria-label="配色"></div><span class="hint" id="color-name"></span></div>
+        <div class="cyclers">
+          <div class="cycler" data-key="layout"><span class="fl">版型</span><button type="button" class="arw" data-d="-1" aria-label="上一個版型">‹</button><output></output><button type="button" class="arw" data-d="1" aria-label="下一個版型">›</button></div>
+          <div class="cycler" data-key="frame"><span class="fl">邊框</span><button type="button" class="arw" data-d="-1" aria-label="上一個邊框">‹</button><output></output><button type="button" class="arw" data-d="1" aria-label="下一個邊框">›</button></div>
+          <div class="cycler" data-key="paper"><span class="fl">紙張</span><button type="button" class="arw" data-d="-1" aria-label="上一種紙張">‹</button><output></output><button type="button" class="arw" data-d="1" aria-label="下一種紙張">›</button></div>
+          <div class="cycler" data-key="grid"><span class="fl">格線</span><button type="button" class="arw" data-d="-1" aria-label="上一種格線">‹</button><output></output><button type="button" class="arw" data-d="1" aria-label="下一種格線">›</button></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-type">
+        <h2 class="card-h with-who" id="h-type"><span><em>type</em>文字</span>
+          <span class="slide mini" id="who" role="group" aria-label="調整誰的字"><i class="thumb" aria-hidden="true"></i><button type="button" data-v="them">他</button><button type="button" data-v="me">我</button></span></h2>
+        <div class="field"><label class="fl" for="font-sel">字體</label><select id="font-sel"></select></div>
+        <div class="cyclers">
+          <div class="stepper" id="step-size"><span class="fl">字級</span><button type="button" class="arw" data-d="-0.5" aria-label="字縮小">−</button><output aria-live="polite"></output><button type="button" class="arw" data-d="0.5" aria-label="字放大">＋</button></div>
+          <div class="row2"><span class="fl" id="track-l">字距</span><div class="slide full small" id="track" role="group" aria-labelledby="track-l"><i class="thumb" aria-hidden="true"></i><button type="button" data-v="0">緊</button><button type="button" data-v="1">標準</button><button type="button" data-v="2">寬</button><button type="button" data-v="3">更寬</button></div></div>
+          <div class="stepper" id="step-rows"><span class="fl">行數</span><button type="button" class="arw" data-d="-1" aria-label="少一行（行距變寬）">−</button><output aria-live="polite"></output><button type="button" class="arw" data-d="1" aria-label="多一行（行距變密）">＋</button></div>
+        </div>
+        <div class="reset"><button type="button" id="size-reset">↺ 恢復預設</button></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-mat">
+        <h2 class="card-h" id="h-mat"><em>materials</em>素材</h2>
+        <div class="mats">
+          <button type="button" class="mt" id="mat-photo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><rect x="7.5" y="5.5" width="9" height="9"/></svg><span>照片</span></button>
+          <button type="button" class="mt" id="mat-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5"/></svg><span>便利貼</span></button>
+          <button type="button" class="mt" id="mat-tape"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15 15 3l6 6L9 21z"/><path d="M6 12l6 6M9 9l6 6M12 6l6 6" stroke-dasharray="1.5 2"/></svg><span>紙膠帶</span></button>
+          <button type="button" class="mt" id="mat-sticker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg><span>貼紙</span></button>
+          <button type="button" class="mt" id="mat-notes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 7l-7.5 7.5a2 2 0 0 0 2.8 2.8L19 9.6a4 4 0 0 0-5.7-5.7L5.6 11.6a6 6 0 0 0 8.5 8.5L20 14"/></svg><span>備註</span><b class="cnt" id="notes-cnt" hidden></b></button>
+        </div>
+      </section>
+
+      <div class="dock">
+        <div class="dock-row">
+          <button type="button" class="btn solid" id="btn-done"></button>
+          <button type="button" class="btn" id="btn-revert" hidden>還原成修改前</button>
+        </div>
+        <div class="dock-row">
+          <div class="menu-wrap"><button type="button" class="btn" id="btn-output" aria-haspopup="true" aria-expanded="false">輸出</button>
+            <div class="menu" id="menu-output" hidden>
+              <button type="button" id="out-png">圖片（PNG）<small>傳給朋友、放社群</small></button>
+              <button type="button" id="out-pdf">PDF<small>保存、自己列印</small></button>
+              <button type="button" id="out-book">翻書網頁<small>一個檔案，打開就能翻</small></button>
+              <button type="button" id="out-print">印刷用 PDF<small>交給印刷廠</small></button>
+            </div></div>
+          <div class="menu-wrap"><button type="button" class="btn" id="btn-backup" aria-haspopup="true" aria-expanded="false">備份</button>
+            <div class="menu" id="menu-backup" hidden>
+              <button type="button" id="btn-export">匯出備份檔</button>
+              <button type="button" id="btn-import">匯入備份檔</button>
+            </div></div>
+        </div>
+        <p class="status" id="spread-when"></p>
+        <p class="status" id="save-status" role="status" aria-live="polite"></p>
+      </div>
+    </aside>
+  </div>
+  <section class="wallv" id="wall" role="main" aria-label="照片牆" hidden>
+  <div class="wall-h"><p id="wall-count"></p><button type="button" class="link" id="wall-sort"></button></div>
+  <div class="wall-grid" id="wall-grid"></div>
+  <p class="wall-empty" id="wall-empty" hidden>還沒有照片。在「寫日記」畫面用右側「素材 → 照片」加入拍立得照片，就會出現在這裡。</p>
+</section>
+  <footer class="sig"><i role="img" aria-label="Crafted by YuanLiv"></i><small>日記只存在你的裝置裡</small></footer>
+</div>
+
+<div class="fxbar" id="fxbar" role="toolbar" aria-label="選取文字的樣式" hidden>
+  <div class="grp" role="group" aria-label="大小">
+    <button type="button" data-op="size" data-v="s" aria-label="小一點">小</button>
+    <button type="button" data-op="size" data-v="l" aria-label="大一點">大</button>
+    <button type="button" data-op="size" data-v="xl" aria-label="大很多">特大</button>
+  </div>
+  <div class="grp"><button type="button" data-op="b" data-v="b" aria-label="粗體"><b>B</b></button><button type="button" data-op="strike" data-v="x" aria-label="刪除線"><s>S</s></button></div>
+  <div class="grp" role="group" aria-label="字色">
+    <button type="button" class="sw" data-op="color" data-v="c1" aria-label="字色：朱紅" title="朱紅"><i></i></button>
+    <button type="button" class="sw" data-op="color" data-v="c2" aria-label="字色：靛藍" title="靛藍"><i></i></button>
+    <button type="button" class="sw" data-op="color" data-v="c3" aria-label="字色：墨綠" title="墨綠"><i></i></button>
+    <button type="button" class="sw" data-op="color" data-v="c4" aria-label="字色：琥珀" title="琥珀"><i></i></button>
+  </div>
+  <div class="grp" role="group" aria-label="螢光筆">
+    <button type="button" class="hl" data-op="hl" data-v="h1" aria-label="螢光筆：鵝黃" title="鵝黃"><i></i></button>
+    <button type="button" class="hl" data-op="hl" data-v="h2" aria-label="螢光筆：櫻粉" title="櫻粉"><i></i></button>
+    <button type="button" class="hl" data-op="hl" data-v="h3" aria-label="螢光筆：薄荷" title="薄荷"><i></i></button>
+    <button type="button" class="hl" data-op="hl" data-v="h4" aria-label="螢光筆：天藍" title="天藍"><i></i></button>
+  </div>
+  <div class="grp"><button type="button" data-op="clear" aria-label="清除樣式">清除</button></div>
+</div>
+<div class="toast" id="toast" role="status" hidden><span></span><button type="button" id="toast-undo">復原</button></div>
+<div class="modal" id="modal" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title"></div></div>
+
+<script src="themes.js"></script>
+<script src="parse.js"></script>
+<script src="app.js"></script>
+<script src="objects.js"></script>
+<script src="views.js"></script>
+<script src="export.js"></script>
+<script src="print.js"></script>
+<script src="mobile.js"></script>
+<script src="search.js"></script>
+<script src="guide.js"></script>
+
+</body>
+</html>

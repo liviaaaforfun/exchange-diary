@@ -1,0 +1,435 @@
+@font-face{font-family:'JH1';src:url('fonts/jh1.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'JH2';src:url('fonts/jh2.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'JH3';src:url('fonts/jh3.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'JH9';src:url('fonts/jh9.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'CYLY';src:url('fonts/cyly.woff2') format('woff2');font-display:swap}
+
+
+/* Layout: a gingham tablecloth (chrome) under one open A5 diary on a linen cover; controls above, font swatches below.
+   Page geometry is in millimetres: 1mm = var(--mm) = page width / 148. */
+:root{
+  --desk:#eff1e9; --check:rgba(140,160,132,.10); --surface:#fbf9f3; --ink:#3d3a33; --muted:#77736a;
+  --accent:#6e8466; --accent-ink:#ffffff; --line:#dcd6c8; --shadow:rgba(70,62,45,.20);
+  --ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --news:"Playfair Display","Noto Serif TC","Songti TC",Georgia,serif;
+  --serif-tc:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --geo:"Jost","Noto Sans TC","PingFang TC",sans-serif;
+  --round:"Quicksand","Noto Sans TC","PingFang TC",sans-serif;
+  --latin:"Cormorant Garamond","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --fallback:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+}
+:root[data-theme="dark"]{
+  --desk:#1d211c; --check:rgba(150,172,140,.06); --surface:#262b25; --ink:#e8e4da; --muted:#a8a496;
+  --accent:#a9bf9f; --accent-ink:#1d211c; --line:#3a4037; --shadow:rgba(0,0,0,.55); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background-color:var(--desk);
+  background-image:repeating-linear-gradient(90deg,var(--check) 0 22px,transparent 22px 44px),repeating-linear-gradient(0deg,var(--check) 0 22px,transparent 22px 44px);
+  color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.65;padding-inline:16px;padding-block:28px 56px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+header.top{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-family:var(--latin);font-style:italic;font-size:17px;color:var(--accent);letter-spacing:.02em}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,4vw,32px);line-height:1.3;margin:0;text-wrap:balance;letter-spacing:.04em}
+.lead{margin:4px 0 0;color:var(--muted);max-width:62ch}
+
+/* controls: a paper card with a pearl-dot inner border */
+.controls{background:var(--surface);border-radius:12px;padding:16px 18px;display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end;
+  outline:2px dotted color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:-7px;box-shadow:0 1px 0 var(--line)}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctl > .cap{font-size:12px;color:var(--muted);letter-spacing:.1em}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{font:inherit;font-size:14px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;min-height:36px}
+.seg button:hover{border-color:var(--accent)}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;min-height:36px;max-width:100%}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sidepick{display:none}
+.ctl-wide{flex-basis:100%}
+.dots{display:inline-flex;margin-right:7px;vertical-align:-1px}.dots i{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1.5px var(--surface)}.dots i + i{margin-left:-4px}
+
+/* ---------- the book ---------- */
+.desk{display:flex;flex-direction:column;align-items:center;gap:12px}
+.book{width:100%;max-width:1000px;padding:1.1%;border-radius:6px;background-color:var(--cover,#b9a28a);
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(60,40,20,.08) 0 1px,transparent 1px 3px);
+  box-shadow:0 18px 34px -10px var(--shadow),0 4px 10px -4px var(--shadow)}
+.spread{display:grid;grid-template-columns:1fr 1fr}
+.page{container-type:inline-size;aspect-ratio:148/210;position:relative;overflow:hidden;overflow:clip;min-width:0;--mm:calc(100cqw / 148);--lh:calc(var(--lhn) * var(--mm));--fs:calc(var(--fsn) * var(--mm))}
+.page[data-side="them"]{box-shadow:-1px 1px 0 #ece4d6,-2px 2px 0 #ddd2c0,-3px 3px 0 #ece4d6,-4px 4px 0 #d6cab6}
+.page[data-side="me"]{box-shadow:1px 1px 0 #ece4d6,2px 2px 0 #ddd2c0,3px 3px 0 #ece4d6,4px 4px 0 #d6cab6}
+
+/* paper stocks are page content, so they keep their own colours in both themes */
+.spread{--paper:#f7f2e7;--pink:#4b423a;--rule:rgba(128,146,124,.40);--label:#8b9886;--tea:#b8987e;--fiber-o:.9;--linen:none}
+.spread[data-paper="ivory"]{--paper:#f7f2e7;--pink:#4b423a;--rule:rgba(128,146,124,.40);--label:#8b9886;--fiber-o:.85}
+.spread[data-paper="cream"]{--paper:#f1e9d9;--pink:#4a4037;--rule:rgba(150,132,108,.36);--label:#9a8873;--fiber-o:1}
+.spread[data-paper="oat"]{--paper:#e6dbc8;--pink:#43392f;--rule:rgba(112,98,78,.32);--label:#857360;--fiber-o:1;
+  --linen:repeating-linear-gradient(0deg,rgba(255,255,255,.16) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(90,70,45,.06) 0 1px,transparent 1px 3px)}
+.paper{position:absolute;inset:0;background-color:var(--paper);color:var(--pink)}
+.deco{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:var(--fiber-o);
+  background-image:var(--linen),var(--fiber),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .44 0 0 0 0 .34 0 0 0 .10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.page[data-side="them"] .gutter{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to left,rgba(80,60,40,.16),rgba(80,60,40,.05) 2.5%,transparent 8%)}
+.page[data-side="me"] .gutter{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,rgba(80,60,40,.18),rgba(80,60,40,.05) 2.5%,transparent 8%)}
+
+/* grid layer: starts exactly one line above the writing area, so every text row sits on a rule */
+.grid{position:absolute;top:calc(var(--gt) * var(--mm));bottom:calc(var(--gb) * var(--mm))}
+.page[data-side="them"] .grid{left:calc(var(--go) * var(--mm));right:calc(var(--gg) * var(--mm))}
+.page[data-side="me"] .grid{right:calc(var(--go) * var(--mm));left:calc(var(--gg) * var(--mm))}
+.spread[data-grid="lined"] .grid{background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--lh) - 1px),var(--rule) calc(var(--lh) - 1px) var(--lh))}
+.spread[data-grid="square"] .grid{--rule-sq:color-mix(in srgb,var(--rule) 62%,transparent);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--lh) - 1px),var(--rule-sq) calc(var(--lh) - 1px) var(--lh)),repeating-linear-gradient(to right,transparent 0 calc(var(--lh) - 1px),var(--rule-sq) calc(var(--lh) - 1px) var(--lh))}
+.spread[data-grid="dot"] .grid{background-image:radial-gradient(circle at 50% 100%,var(--rule) calc(var(--mm) * .38),transparent calc(var(--mm) * .5));background-size:var(--lh) var(--lh)}
+
+.sheet{position:absolute;top:calc(var(--gt) * var(--mm) + var(--lh));bottom:calc(var(--gb) * var(--mm));display:grid;
+  font-size:var(--fs);line-height:var(--lh)}
+.page[data-side="them"] .sheet{left:calc((var(--go) + 2.5) * var(--mm));right:calc((var(--gg) + 2.5) * var(--mm))}
+.page[data-side="me"] .sheet{right:calc((var(--go) + 2.5) * var(--mm));left:calc((var(--gg) + 2.5) * var(--mm))}
+.page[data-side="them"]{--hand:var(--font-them);--font-ans:var(--font-me)}
+.page[data-side="me"]{--hand:var(--font-me);--font-ans:var(--font-them)}
+.sheet .val,.sheet .q{font-family:var(--hand),var(--fallback)}
+.sheet p{margin:0}
+.lbl{display:flex;gap:calc(var(--mm) * 1.4);align-items:baseline;white-space:nowrap;font-family:var(--ui);font-weight:500;font-size:calc(var(--mm) * 2.15);letter-spacing:.16em;color:var(--label)}
+.lbl em{font-family:var(--latin);font-style:italic;font-weight:500;font-size:calc(var(--mm) * 3.2);letter-spacing:.01em}
+.lbl::before{content:"";width:calc(var(--mm) * 2.2);height:calc(var(--mm) * 2.2);align-self:center;background:var(--label);opacity:.85;
+  -webkit-mask:var(--leaf) center/contain no-repeat;mask:var(--leaf) center/contain no-repeat}
+.f-head .lbl::before,.ans .lbl::before{display:none}
+.f-mood .val::before{content:"「"}.f-mood .val::after{content:"」"}
+.ans{display:flex;gap:calc(var(--mm) * 2);align-items:baseline}
+.ans .a{flex:1;min-height:var(--lh);font-family:var(--font-ans),var(--fallback);background-image:radial-gradient(circle,var(--label) 30%,transparent 36%);
+  background-size:calc(var(--mm) * 1.6) calc(var(--mm) * .55);background-repeat:repeat-x;background-position:0 92%}
+.big{font-size:1.5em;line-height:0}
+.hl{background:linear-gradient(transparent 60%,rgba(214,196,150,.55) 60%,rgba(214,196,150,.55) 92%,transparent 92%)}
+.sheet [contenteditable]{outline:none;border-radius:2px;caret-color:var(--pink)}
+.sheet [contenteditable]:focus{background:rgba(214,196,150,.18)}
+
+/* owner tag: a small paper label with an eyelet */
+.tag{position:absolute;top:calc(var(--tag-t) * var(--mm));height:calc(var(--mm) * 7);padding:0 calc(var(--mm) * 2.6) 0 calc(var(--mm) * 5.2);display:flex;align-items:center;gap:calc(var(--mm) * 1.2);
+  font-family:var(--ui);font-weight:500;font-size:calc(var(--mm) * 2.5);letter-spacing:.24em;color:var(--tag-ink);background:var(--tag-bg);
+  clip-path:polygon(calc(var(--mm) * 2.6) 0,100% 0,100% 100%,calc(var(--mm) * 2.6) 100%,0 50%);z-index:2}
+.tag-wrap{position:absolute;inset:0;pointer-events:none;filter:drop-shadow(0 .5px .7px rgba(70,55,35,.38));z-index:2}
+.tag::before{content:"";position:absolute;left:calc(var(--mm) * 2.4);top:50%;width:calc(var(--mm) * 1.5);height:calc(var(--mm) * 1.5);border-radius:50%;transform:translateY(-50%);
+  background:var(--paper);box-shadow:inset 0 0 0 calc(var(--mm) * .35) #cdbb9c}
+.tag svg{width:calc(var(--mm) * 3.4);height:calc(var(--mm) * 3.4);color:var(--label)}
+.page[data-side="them"] .tag{left:calc(var(--tag-o) * var(--mm));transform:rotate(-3deg)}
+.page[data-side="me"] .tag{right:calc(var(--tag-o) * var(--mm));transform:rotate(3deg)}
+
+/* ---------- layouts: text always writes straight onto the page ---------- */
+.f-head{grid-area:head}.f-mood{grid-area:mood}.f-diary{grid-area:diary;min-height:0}.f-say{grid-area:say}.f-qa{grid-area:qa;position:relative}
+
+/* A 信紙: symmetric centred header with a sprig on each side, a wavy printed rule before the Q&A */
+.spread[data-layout="A"] .sheet{grid-template-areas:"head" "mood" "diary" "say" "qa";grid-template-rows:var(--lh) auto 1fr auto auto}
+.spread[data-layout="A"] .f-head{display:flex;justify-content:center;align-items:baseline;gap:calc(var(--mm) * 4)}
+.spread[data-layout="A"] .f-head > div{display:flex;align-items:baseline;gap:calc(var(--mm) * 1.6)}
+.spread[data-layout="A"] .f-head .lbl em{font-size:calc(var(--mm) * 3)}
+.spread[data-layout="A"] .f-head .lbl span{display:none}
+.f-head .sprig{width:calc(var(--mm) * 4.4);height:calc(var(--mm) * 4.4);color:var(--label);align-self:center;flex:none}
+.f-head .sprig.r{transform:scaleX(-1)}
+.spread[data-layout="A"] .f-mood{padding-top:var(--lh);text-align:center}
+.spread[data-layout="A"] .f-mood .lbl{justify-content:center}
+.spread[data-layout="A"] .f-diary,.spread[data-layout="A"] .f-say{padding-top:var(--lh)}
+.spread[data-layout="A"] .f-qa{padding-top:var(--lh)}
+.spread[data-layout="A"] .f-qa::before{content:"";position:absolute;left:12%;right:12%;top:calc(var(--lh) * .5 - var(--mm) * 1);height:calc(var(--mm) * 2);background:var(--label);opacity:.8;
+  -webkit-mask:var(--wave) left center/calc(var(--mm) * 6) 100% repeat-x;mask:var(--wave) left center/calc(var(--mm) * 6) 100% repeat-x}
+
+/* B 側欄: date and weather in an outer column, set off by a line of pearl dots */
+.spread[data-layout="B"] .page[data-side="them"] .sheet{grid-template-columns:calc(var(--mm) * 29) .8fr 1.2fr;grid-template-areas:"head mood mood" "head diary diary" "say say qa";grid-template-rows:auto 1fr auto}
+.spread[data-layout="B"] .page[data-side="me"] .sheet{grid-template-columns:1.2fr .8fr calc(var(--mm) * 29);grid-template-areas:"mood mood head" "diary diary head" "qa say say";grid-template-rows:auto 1fr auto}
+.spread[data-layout="B"] .f-head{display:flex;flex-direction:column;gap:var(--lh)}
+.spread[data-layout="B"] .page[data-side="them"] .f-head{border-right:calc(var(--mm) * .7) dotted var(--label);margin-right:calc(var(--mm) * 4)}
+.spread[data-layout="B"] .page[data-side="me"] .f-head{border-left:calc(var(--mm) * .7) dotted var(--label);margin-left:calc(var(--mm) * 3);padding-left:calc(var(--mm) * 2.5)}
+.spread[data-layout="B"] .f-head > div{display:flex;flex-direction:column}
+.spread[data-layout="B"] .f-head .sprig{width:calc(var(--mm) * 7);height:calc(var(--mm) * 7);opacity:.8;order:5;margin-top:auto;margin-bottom:var(--lh)}
+.spread[data-layout="B"] .f-head .sprig.r{display:none}
+.spread[data-layout="B"] .f-date .val{font-size:1.1em;white-space:nowrap}
+.spread[data-layout="B"] .f-diary,.spread[data-layout="B"] .f-say,.spread[data-layout="B"] .f-qa{padding-top:var(--lh)}
+.spread[data-layout="B"] .f-say,.spread[data-layout="B"] .f-qa{min-width:0}
+.spread[data-layout="B"] .page[data-side="them"] .f-say,.spread[data-layout="B"] .page[data-side="me"] .f-qa{padding-right:calc(var(--mm) * 3)}
+.spread[data-layout="B"] .page[data-side="me"] .f-say,.spread[data-layout="B"] .page[data-side="them"] .f-qa{padding-left:calc(var(--mm) * 3);border-left:calc(var(--mm) * .5) dotted var(--label)}
+
+/* C 邊欄線: a printed milk-tea double margin rule, labels live in the margin */
+.spread[data-layout="C"] .sheet{--mg:calc(var(--mm) * 17);grid-template-areas:"head" "mood" "diary" "say" "qa";grid-template-rows:var(--lh) auto 1fr auto auto}
+.spread[data-layout="C"] .sheet::before{content:"";position:absolute;left:var(--mg);top:calc(var(--lh) * -1);bottom:0;border-left:calc(var(--mm) * .35) solid var(--c2);opacity:.75;pointer-events:none}
+.spread[data-layout="C"] .sheet::after{content:"";position:absolute;left:calc(var(--mg) + var(--mm) * .9);top:calc(var(--lh) * -1);bottom:0;border-left:calc(var(--mm) * .2) solid var(--c2);opacity:.55;pointer-events:none}
+.spread[data-layout="C"] .f-head,.spread[data-layout="C"] section{display:grid;grid-template-columns:var(--mg) 1fr;align-items:baseline}
+.spread[data-layout="C"] .f-head{grid-template-columns:var(--mg) auto 1fr}
+.spread[data-layout="C"] .f-head .sprig{display:none}
+.spread[data-layout="C"] .f-date{display:contents}
+.spread[data-layout="C"] .f-weather{display:flex;gap:calc(var(--mm) * 1.6);align-items:baseline;padding-left:calc(var(--mm) * 6)}
+.spread[data-layout="C"] .lbl{grid-column:1;justify-content:flex-end;padding-right:calc(var(--mm) * 3);line-height:var(--lh)}
+.spread[data-layout="C"] .f-head .lbl span{display:none}
+.spread[data-layout="C"] .f-weather .lbl{padding-right:0}
+.spread[data-layout="C"] .f-head .f-date .val{grid-column:2;padding-left:calc(var(--mm) * 3)}
+.spread[data-layout="C"] section > .val,.spread[data-layout="C"] section > .q{grid-column:2;padding-left:calc(var(--mm) * 3)}
+.spread[data-layout="C"] .ans{display:contents}
+.spread[data-layout="C"] .ans .a{grid-column:2;margin-left:calc(var(--mm) * 3)}
+.spread[data-layout="C"] .f-mood,.spread[data-layout="C"] .f-say,.spread[data-layout="C"] .f-qa{padding-top:var(--lh)}
+
+
+/* ===================== 粉彩文具 theme =====================
+   Pastel graph paper, organic wavy shapes, airy rounded type, a few soft clay-style objects in the margins. */
+.lbl .no,.vtext,.clay-layer,.tag .from{display:none}
+.spread[data-theme="pastel"]{--fiber-o:.3}
+.spread[data-theme="pastel"] .grain{--fiber:none;--linen:none}
+.spread[data-theme="pastel"][data-paper="blush"]{--paper:#faf5f8}
+.spread[data-theme="pastel"][data-paper="milk"]{--paper:#fbf8f1}
+.spread[data-theme="pastel"] .gutter{opacity:.7}
+.spread[data-theme="pastel"] .lbl{font-family:var(--round);font-weight:500;letter-spacing:.2em;font-size:calc(var(--mm) * 2)}
+.spread[data-theme="pastel"] .lbl::before{display:none}
+.spread[data-theme="pastel"] .lbl em{font-family:var(--round);font-style:normal;font-weight:600;text-transform:uppercase;letter-spacing:.22em;font-size:calc(var(--mm) * 2.1)}
+.spread[data-theme="pastel"] .lbl .no{display:inline;font-family:var(--round);font-weight:300;font-size:calc(var(--mm) * 4.4);letter-spacing:.04em;color:color-mix(in srgb,var(--c1) 45%,var(--label))}
+.spread[data-theme="pastel"] .f-head .sprig{display:none}
+/* the owner tag becomes a soft pill */
+.spread[data-theme="pastel"] .tag-wrap{filter:none}
+.spread[data-theme="pastel"] .tag{clip-path:none;border-radius:999px;height:calc(var(--mm) * 6);padding:0 calc(var(--mm) * 3.4);font-family:var(--round),var(--ui);letter-spacing:.16em;transform:none!important;gap:calc(var(--mm) * 1.4)}
+.spread[data-theme="pastel"] .tag::before,.spread[data-theme="pastel"] .tag svg{display:none}
+.spread[data-theme="pastel"] .tag .from{display:inline;font-style:normal;font-weight:600;font-size:.78em;text-transform:uppercase;opacity:.75}
+/* a vertical journal line in the outer margin */
+.spread[data-theme="pastel"] .vtext{display:flex;gap:calc(var(--mm) * 3);position:absolute;top:calc(var(--mm) * 34);writing-mode:vertical-rl;font-family:var(--round),var(--ui);font-weight:500;
+  font-size:calc(var(--mm) * 2.1);letter-spacing:.32em;color:var(--vt);z-index:2;white-space:nowrap;pointer-events:none}
+.page[data-side="them"] .vtext{left:calc(var(--vx) * var(--mm))}
+.page[data-side="me"] .vtext{right:calc(var(--vx) * var(--mm))}
+.spread[data-theme="pastel"] .clay-layer{display:block;position:absolute;inset:0;pointer-events:none;z-index:3}
+.clay{position:absolute;overflow:visible;filter:drop-shadow(0 calc(var(--mm) * .9) calc(var(--mm) * 1) color-mix(in srgb,var(--label) 24%,transparent))}
+
+/* shared pastel page structure: a large date, a wavy colour block for the mood, numbered sections */
+.spread[data-theme="pastel"] .sheet{grid-template-areas:"head" "mood" "diary" "say" "qa";grid-template-rows:calc(var(--lh) * 2) auto 1fr auto auto}
+.spread[data-theme="pastel"] .f-head{display:flex;align-items:flex-end;justify-content:space-between;gap:calc(var(--mm) * 3)}
+.spread[data-theme="pastel"] .page[data-side="me"] .f-head{flex-direction:row-reverse}
+.spread[data-theme="pastel"] .f-date .lbl{display:none}
+.spread[data-theme="pastel"] .f-date .val{font-family:var(--round),var(--fallback);font-weight:300;font-size:calc(var(--lh) * 1.25);line-height:calc(var(--lh) * 2);letter-spacing:.06em;color:var(--label);white-space:nowrap}
+.spread[data-theme="pastel"] .f-weather{display:flex;align-items:baseline;gap:calc(var(--mm) * 2);line-height:var(--lh)}
+.spread[data-theme="pastel"] .f-weather .lbl span{display:none}
+.spread[data-theme="pastel"] .f-weather .lbl em,.spread[data-theme="pastel"] .ans .lbl em{display:inline-block;background:var(--tag-bg);color:var(--tag-ink);border-radius:999px;padding:0 calc(var(--mm) * 2.2);line-height:calc(var(--mm) * 4.6);font-size:calc(var(--mm) * 1.8)}
+.spread[data-theme="pastel"] .f-mood{position:relative;isolation:isolate;padding:var(--lh) calc(var(--mm) * 5) 0;text-align:center}
+.spread[data-theme="pastel"] .f-mood .lbl{justify-content:center}
+.spread[data-theme="pastel"] .f-mood::before{content:"";position:absolute;z-index:-1;left:calc(var(--mm) * -1.5);right:calc(var(--mm) * -1.5);top:calc(var(--lh) * .45);bottom:calc(var(--lh) * -.45);
+  background:var(--blk);-webkit-mask:var(--wavyblk) center/100% 100% no-repeat;mask:var(--wavyblk) center/100% 100% no-repeat}
+.spread[data-theme="pastel"] .f-diary,.spread[data-theme="pastel"] .f-say,.spread[data-theme="pastel"] .f-qa{padding-top:var(--lh)}
+
+/* D 日誌: numbered labels sit on their own line above each section */
+.spread[data-layout="P1"] .f-diary .lbl,.spread[data-layout="P1"] .f-say .lbl,.spread[data-layout="P1"] .f-qa > .lbl{gap:calc(var(--mm) * 1.8)}
+
+/* E 網格: a narrow outer label column with a large number, a thin coloured rule beside the writing */
+.spread[data-layout="P2"] .f-diary,.spread[data-layout="P2"] .f-say,.spread[data-layout="P2"] .f-qa{display:grid;column-gap:calc(var(--mm) * 3.5);align-content:start}
+.spread[data-layout="P2"] .page[data-side="them"] :is(.f-diary,.f-say,.f-qa){grid-template-columns:calc(var(--mm) * 18) 1fr}
+.spread[data-layout="P2"] .page[data-side="me"] :is(.f-diary,.f-say,.f-qa){grid-template-columns:1fr calc(var(--mm) * 18)}
+.spread[data-layout="P2"] :is(.f-diary,.f-say,.f-qa) > .lbl{flex-direction:column;align-items:flex-start;gap:0;grid-row:1 / span 3;line-height:var(--lh);white-space:normal}
+.spread[data-layout="P2"] .page[data-side="them"] :is(.f-diary,.f-say,.f-qa) > .lbl{grid-column:1}
+.spread[data-layout="P2"] .page[data-side="me"] :is(.f-diary,.f-say,.f-qa) > .lbl{grid-column:2;align-items:flex-end}
+.spread[data-layout="P2"] :is(.f-diary,.f-say,.f-qa) > .lbl .no{font-size:calc(var(--lh) * .95);line-height:var(--lh)}
+.spread[data-layout="P2"] :is(.f-diary,.f-say,.f-qa) > :not(.lbl){min-width:0}
+.spread[data-layout="P2"] .page[data-side="them"] :is(.f-diary,.f-say,.f-qa) > :not(.lbl){grid-column:2;border-left:calc(var(--mm) * .4) solid color-mix(in srgb,var(--c1) 70%,transparent);padding-left:calc(var(--mm) * 3)}
+.spread[data-layout="P2"] .page[data-side="me"] :is(.f-diary,.f-say,.f-qa) > :not(.lbl){grid-column:1;border-right:calc(var(--mm) * .4) solid color-mix(in srgb,var(--c1) 70%,transparent);padding-right:calc(var(--mm) * 3)}
+
+
+/* ===================== 日系生活誌 theme =====================
+   White or warm-white matte paper, wide margins, a large English date, lower-case labels with short rules, hairline dividers. */
+.edate,.efoot{display:none}
+.spread[data-theme="editorial"]{--fiber-o:0}
+.spread[data-theme="editorial"] .grain{display:none}
+.spread[data-theme="editorial"] .grain{--fiber:none;--linen:none}
+.spread[data-theme="editorial"][data-paper="white"]{--paper:#ffffff}
+.spread[data-theme="editorial"][data-paper="warm"]{--paper:#faf9f6}
+.spread[data-theme="editorial"][data-paper="matte"]{--paper:#f6f5f2}
+.spread[data-theme="editorial"] .gutter{opacity:.28}
+.spread[data-theme="editorial"] .f-head .sprig{display:none}
+.spread[data-theme="editorial"] .lbl{font-family:var(--geo);font-weight:400;font-size:calc(var(--mm) * 1.9);letter-spacing:.2em;color:var(--label);gap:calc(var(--mm) * 2)}
+.spread[data-theme="editorial"] .lbl::before{display:none}
+.spread[data-theme="editorial"] .lbl em{font-family:var(--geo);font-style:normal;font-weight:500;font-size:calc(var(--mm) * 2.5);letter-spacing:.12em;color:var(--head);text-transform:lowercase;display:inline-flex;align-items:center;gap:calc(var(--mm) * 2)}
+.spread[data-theme="editorial"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl em::after{content:"";width:calc(var(--mm) * 6);height:calc(var(--mm) * .2);background:var(--label);opacity:.7}
+.spread[data-theme="editorial"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl em::before{content:"";width:calc(var(--mm) * 1.7);height:calc(var(--mm) * 1.7);background:var(--c1)}
+/* the mood line sits on a flat band of the pale colour, like a strip of coloured tape */
+.spread[data-theme="editorial"] .f-mood .val{display:inline;padding:0 calc(var(--mm) * 1.2);-webkit-box-decoration-break:clone;box-decoration-break:clone;background:linear-gradient(transparent 22%,var(--c2) 22%,var(--c2) 94%,transparent 94%)}
+.spread[data-theme="editorial"] .f-mood .val::before,.spread[data-theme="editorial"] .f-mood .val::after{content:none}
+.spread[data-theme="editorial"] .sheet{grid-template-areas:"head" "mood" "diary" "say" "qa";grid-template-rows:calc(var(--lh) * 2) auto 1fr auto auto}
+/* header: a large English date, the editable date and the weather in small grey type beside it */
+.spread[data-theme="editorial"] .f-head{position:relative;display:grid;grid-template-columns:1fr auto;grid-template-areas:"ed date" "ed wx";align-items:end}
+.spread[data-theme="editorial"] .page[data-side="me"] .f-head{grid-template-columns:auto 1fr;grid-template-areas:"date ed" "wx ed"}
+.spread[data-theme="editorial"] .edate{display:block;grid-area:ed;font-family:var(--geo);font-weight:500;color:var(--head);font-size:calc(var(--lh) * 1.02);line-height:calc(var(--lh) * 2);letter-spacing:.03em;white-space:nowrap}
+.spread[data-theme="editorial"] .page[data-side="me"] .edate{justify-self:end}
+.edate .wd{font-size:.3em;font-weight:500;letter-spacing:.16em;color:var(--label);margin-left:calc(var(--mm) * 2)}
+.edate .day{margin-left:.25em}
+.spread[data-theme="editorial"] .f-date{grid-area:date}.spread[data-theme="editorial"] .f-weather{grid-area:wx}
+.spread[data-theme="editorial"] :is(.f-date,.f-weather){display:flex;gap:calc(var(--mm) * 2);align-items:baseline;justify-content:flex-end;line-height:var(--lh)}
+.spread[data-theme="editorial"] .page[data-side="me"] :is(.f-date,.f-weather){justify-content:flex-start}
+.spread[data-theme="editorial"] .f-date .lbl,.spread[data-theme="editorial"] .f-weather .lbl span{display:none}
+.spread[data-theme="editorial"] .f-date .val{font-family:var(--geo);font-size:calc(var(--mm) * 2.5);letter-spacing:.14em;color:var(--label)}
+.spread[data-theme="editorial"] .f-weather .lbl em{font-size:calc(var(--mm) * 2.1);color:var(--label)}
+.spread[data-theme="editorial"] .f-mood{padding-top:var(--lh)}
+.spread[data-theme="editorial"] .f-mood .val{font-size:1.18em;letter-spacing:.16em;color:var(--head)}
+.spread[data-theme="editorial"] :is(.f-diary,.f-say,.f-qa){padding-top:var(--lh);position:relative}
+.spread[data-theme="editorial"]:not([data-grid="lined"]) :is(.f-diary,.f-say,.f-qa)::after{content:"";position:absolute;left:0;right:0;top:-1px;border-top:calc(var(--mm) * .2) solid color-mix(in srgb,var(--label) 55%,transparent)}
+.spread[data-theme="editorial"] .ans .lbl em{font-size:calc(var(--mm) * 2.1);color:var(--label)}
+/* owner line and page footer */
+.spread[data-theme="editorial"] .tag-wrap{filter:none}
+.spread[data-theme="editorial"] .tag{clip-path:none;background:none;padding:0;height:auto;font-family:var(--geo),var(--ui);font-size:calc(var(--mm) * 2.3);letter-spacing:.16em;color:var(--head);transform:none!important;gap:calc(var(--mm) * 1.6)}
+.spread[data-theme="editorial"] .tag::before,.spread[data-theme="editorial"] .tag svg{display:none}
+.spread[data-theme="editorial"] .tag .from{display:inline-flex;align-items:center;gap:calc(var(--mm) * 1.6);font-style:normal;color:var(--label)}
+.spread[data-theme="editorial"] .tag .from::after{content:"";width:calc(var(--mm) * 4);height:calc(var(--mm) * .2);background:var(--label)}
+.spread[data-theme="editorial"] .efoot{display:flex;gap:calc(var(--mm) * 3);position:absolute;bottom:calc(var(--mm) * 6.5);font-family:var(--geo);font-size:calc(var(--mm) * 1.8);letter-spacing:.22em;color:var(--label);z-index:2;pointer-events:none;align-items:center}
+.efoot i{width:calc(var(--mm) * 1.1);height:calc(var(--mm) * 1.1);border-radius:50%;background:var(--c1)}
+.efoot b{font-weight:500;color:var(--head)}
+.page[data-side="them"] .efoot{left:calc((var(--go) + 2.5) * var(--mm))}
+.page[data-side="me"] .efoot{right:calc((var(--go) + 2.5) * var(--mm));flex-direction:row-reverse}
+
+/* G 雙欄: a narrow outer label column with a dot, and a rule running in from the page edge to the date */
+.spread[data-layout="G"] .page[data-side="them"] .f-head::before,.spread[data-layout="G"] .page[data-side="me"] .f-head::before{content:"";position:absolute;top:calc(var(--lh) * 1.15);height:calc(var(--mm) * .22);background:var(--head);
+  width:calc((var(--go) + 2.5 - 3) * var(--mm))}
+.spread[data-layout="G"] .page[data-side="them"] .f-head::before{left:calc((var(--go) + 2.5) * var(--mm) * -1)}
+.spread[data-layout="G"] .page[data-side="me"] .f-head::before{right:calc((var(--go) + 2.5) * var(--mm) * -1)}
+.spread[data-layout="G"] :is(.f-mood,.f-diary,.f-say,.f-qa){display:grid;column-gap:calc(var(--mm) * 4);align-content:start}
+.spread[data-layout="G"] .page[data-side="them"] :is(.f-mood,.f-diary,.f-say,.f-qa){grid-template-columns:calc(var(--mm) * 21) 1fr}
+.spread[data-layout="G"] .page[data-side="me"] :is(.f-mood,.f-diary,.f-say,.f-qa){grid-template-columns:1fr calc(var(--mm) * 21)}
+.spread[data-layout="G"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl{flex-direction:column;align-items:flex-start;gap:0;grid-row:1 / span 3;line-height:var(--lh);white-space:normal}
+.spread[data-layout="G"] .page[data-side="them"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl{grid-column:1}
+.spread[data-layout="G"] .page[data-side="me"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl{grid-column:2;align-items:flex-end}
+.spread[data-layout="G"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl em::after{display:none}
+.spread[data-layout="G"] :is(.f-mood,.f-diary,.f-say,.f-qa) > .lbl em::before{content:"";width:calc(var(--mm) * 1.2);height:calc(var(--mm) * 1.2);border-radius:50%;background:var(--c1)}
+.spread[data-layout="G"] .page[data-side="them"] :is(.f-mood,.f-diary,.f-say,.f-qa) > :not(.lbl){grid-column:2;min-width:0}
+.spread[data-layout="G"] .page[data-side="me"] :is(.f-mood,.f-diary,.f-say,.f-qa) > :not(.lbl){grid-column:1;min-width:0}
+
+
+/* ===================== 文學報刊 theme =====================
+   Warm newsprint-white matte paper, a printed masthead, double and single hairline rules, high-contrast serif type. */
+.mast,.edate .wdl{display:none}
+.spread[data-theme="gazette"]{--fiber-o:.5}
+.spread[data-theme="gazette"] .grain{--linen:none}
+.spread[data-theme="gazette"][data-paper="np1"]{--paper:#f4efe5}
+.spread[data-theme="gazette"][data-paper="np2"]{--paper:#f8f4eb}
+.spread[data-theme="gazette"][data-paper="np3"]{--paper:#eeeae2}
+.spread[data-theme="gazette"] .gutter{opacity:.55}
+.spread[data-theme="gazette"] .tag-wrap,.spread[data-theme="gazette"] .f-head .sprig{display:none}
+.spread[data-theme="gazette"] .lbl{font-family:var(--news);font-weight:400;font-size:calc(var(--mm) * 1.9);letter-spacing:.22em;color:var(--label)}
+.spread[data-theme="gazette"] .lbl::before{display:none}
+.spread[data-theme="gazette"] .lbl em{font-family:var(--news);font-style:italic;font-weight:400;font-size:calc(var(--mm) * 2.7);letter-spacing:.02em;color:var(--head)}
+.spread[data-theme="gazette"] .lbl span{font-family:var(--serif-tc);letter-spacing:.3em}
+.spread[data-theme="gazette"] .f-mood .val::before,.spread[data-theme="gazette"] .f-mood .val::after{content:none}
+/* masthead: printed, never editable; it covers the guide lines behind it */
+.spread[data-theme="gazette"] .mast{display:flex;flex-direction:column;grid-area:mast;position:relative;background:var(--paper);margin-inline:calc(var(--mm) * -3);padding-inline:calc(var(--mm) * 3)}
+.spread[data-theme="gazette"] .mast::before{content:"";position:absolute;left:0;right:0;top:calc(var(--lh) * -1);height:var(--lh);background:var(--paper)}
+.mmeta{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--news);font-size:calc(var(--mm) * 1.85);letter-spacing:.24em;text-transform:uppercase;color:var(--label);line-height:var(--lh)}
+.mmeta .mown{white-space:nowrap;font-family:var(--serif-tc);letter-spacing:.3em;text-transform:none;color:var(--head)}
+.mtitle{font-family:var(--news);font-weight:900;font-size:calc(var(--lh) * 1.42);line-height:calc(var(--lh) * 2);text-align:center;color:var(--head);letter-spacing:.005em;white-space:nowrap}
+/* date strip: a heavy rule and a hairline above, a hairline below */
+.spread[data-theme="gazette"] .f-head{grid-area:head;display:flex;justify-content:center;align-items:center;gap:calc(var(--mm) * 2.6);margin-inline:calc(var(--mm) * -3);line-height:var(--lh);
+  background-image:linear-gradient(var(--head),var(--head)),linear-gradient(var(--head),var(--head)),linear-gradient(var(--head),var(--head));
+  background-size:100% calc(var(--mm) * .55),100% calc(var(--mm) * .18),100% calc(var(--mm) * .18);background-position:0 0,0 calc(var(--mm) * 1.05),0 100%;background-repeat:no-repeat}
+.spread[data-theme="gazette"] .f-date{order:1;display:flex}.spread[data-theme="gazette"] .f-date .lbl{display:none}
+.spread[data-theme="gazette"] .f-date .val{font-family:var(--news);font-size:calc(var(--mm) * 2.3);letter-spacing:.2em;color:var(--head)}
+.spread[data-theme="gazette"] .edate{display:flex;align-items:center;gap:calc(var(--mm) * 2.6);order:2;font-family:var(--news);font-size:calc(var(--mm) * 2);letter-spacing:.26em;text-transform:uppercase;color:var(--head)}
+.spread[data-theme="gazette"] .edate :is(.mon,.day,.wd){display:none}
+.spread[data-theme="gazette"] .edate .wdl{display:inline}
+.spread[data-theme="gazette"] :is(.edate,.f-weather)::before{content:"";width:calc(var(--mm) * 1.2);height:calc(var(--mm) * 1.2);background:var(--c1);transform:rotate(45deg)}
+.spread[data-theme="gazette"] .f-weather{order:3;display:flex;align-items:center;gap:calc(var(--mm) * 2)}
+.spread[data-theme="gazette"] .f-weather .lbl span{display:none}
+.spread[data-theme="gazette"] .f-weather .lbl em{font-size:calc(var(--mm) * 2.4)}
+.spread[data-theme="gazette"] .f-mood{padding-top:var(--lh);text-align:center}
+.spread[data-theme="gazette"] .f-mood .lbl{justify-content:center}
+.spread[data-theme="gazette"] .f-mood .val{font-size:1.32em;color:var(--head);letter-spacing:.06em}
+.spread[data-theme="gazette"] :is(.f-diary,.f-say,.f-qa){padding-top:var(--lh)}
+.spread[data-theme="gazette"] :is(.f-diary,.f-say,.f-qa) > .lbl{justify-content:center;gap:calc(var(--mm) * 2.4)}
+.spread[data-theme="gazette"] :is(.f-diary,.f-say,.f-qa) > .lbl em{font-style:normal;font-size:calc(var(--mm) * 2);letter-spacing:.26em;text-transform:uppercase}
+.spread[data-theme="gazette"] :is(.f-diary,.f-say,.f-qa) > .lbl::before,.spread[data-theme="gazette"] :is(.f-diary,.f-say,.f-qa) > .lbl::after{content:"";display:block;flex:1;height:calc(var(--mm) * .18);background:var(--label);opacity:.6;-webkit-mask:none;mask:none;width:auto;align-self:center}
+.spread[data-theme="gazette"] .ans .lbl em{font-size:calc(var(--mm) * 2.3)}
+.spread[data-theme="gazette"] .f-diary .val > p:first-child::first-letter{float:left;font-family:var(--serif-tc);font-weight:700;font-size:calc(var(--lh) * 1.5);line-height:calc(var(--lh) * 2);margin-right:calc(var(--mm) * 1.8);color:var(--head)}
+.spread[data-theme="gazette"] .f-diary .val > p + p{clear:left}
+
+/* H 報刊: the two short fields sit side by side in thin ruled boxes */
+.spread[data-layout="H"] .sheet{grid-template-columns:1fr 1fr;column-gap:calc(var(--mm) * 5);grid-template-areas:"mast mast" "head head" "mood mood" "diary diary" "say qa";grid-template-rows:calc(var(--lh) * 3) var(--lh) auto 1fr auto}
+.spread[data-layout="H"] :is(.f-say,.f-qa){position:relative;padding:var(--lh) calc(var(--mm) * 3) 0;min-width:0}
+.spread[data-layout="H"] :is(.f-say,.f-qa)::before{content:"";position:absolute;left:0;right:0;top:calc(var(--lh) * .5);bottom:0;box-shadow:inset 0 0 0 calc(var(--mm) * .2) var(--head);pointer-events:none}
+.spread[data-layout="H"] :is(.f-say,.f-qa) > .lbl{position:relative;top:calc(var(--lh) * -.5)}
+.spread[data-layout="H"] :is(.f-say,.f-qa) > .lbl::before,.spread[data-layout="H"] :is(.f-say,.f-qa) > .lbl::after{display:none}
+.spread[data-layout="H"] :is(.f-say,.f-qa) > .lbl em{background:var(--paper);padding:0 calc(var(--mm) * 2);box-shadow:inset 0 0 0 calc(var(--mm) * .18) var(--label);line-height:calc(var(--mm) * 4.4)}
+.spread[data-layout="H"] :is(.f-say,.f-qa) > .lbl span{display:none}
+
+/* I 文學: one wide column, an italic masthead, roman numerals and centred section titles */
+.spread[data-layout="I"] .sheet{grid-template-areas:"mast" "head" "mood" "diary" "say" "qa";grid-template-rows:calc(var(--lh) * 3) var(--lh) auto 1fr auto auto}
+.spread[data-layout="I"] .mtitle{font-style:italic;font-weight:500;font-size:calc(var(--lh) * 1.3)}
+.spread[data-layout="I"] :is(.f-diary,.f-say,.f-qa) > .lbl::before,.spread[data-layout="I"] :is(.f-diary,.f-say,.f-qa) > .lbl::after{flex:0 0 calc(var(--mm) * 9)}
+.spread[data-layout="I"] :is(.f-diary,.f-say,.f-qa) > .lbl em{font-style:italic;text-transform:none;letter-spacing:.04em;font-size:calc(var(--mm) * 2.8)}
+.spread[data-layout="I"] .f-diary > .lbl em::before{content:"I.\00a0\00a0"}
+.spread[data-layout="I"] .f-say > .lbl em::before{content:"II.\00a0\00a0"}
+.spread[data-layout="I"] .f-qa > .lbl em::before{content:"III.\00a0\00a0"}
+.spread[data-layout="I"] :is(.f-say,.f-qa){text-align:center}
+.spread[data-layout="I"] .f-qa .ans{text-align:left}
+
+/* owner names stay empty until the user types one; an empty name shows a short dotted line */
+.owner{display:inline;outline:none;pointer-events:auto;cursor:text;vertical-align:baseline}
+.owner:empty{padding-right:calc(var(--mm) * 11);background-image:radial-gradient(circle,currentColor 30%,transparent 38%);background-size:calc(var(--mm) * 1.1) calc(var(--mm) * .45);background-repeat:repeat-x;background-position:0 100%;opacity:.5}
+.owner:focus{background-color:rgba(214,196,150,.2)}
+
+/* 文學報刊: every English field label is upper-case bold serif at one size */
+.spread[data-theme="gazette"][data-layout] .sheet .lbl em{font-family:var(--news);font-style:normal;font-weight:700;font-size:calc(var(--mm) * 2.05);letter-spacing:.2em;text-transform:uppercase;color:var(--head)}
+
+
+.btn{font:inherit;font-size:14px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:999px;padding:6px 14px;cursor:pointer;min-height:36px}
+.btn:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+@media (max-width:720px){
+  .book{max-width:460px;padding:2%}
+  .spread{grid-template-columns:1fr}
+  .spread[data-show="them"] .page[data-side="me"],.spread[data-show="me"] .page[data-side="them"]{display:none}
+  .sidepick{display:flex}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---------- styled words inside a field (selected text: size, bold, ink colour, highlighter) ----------
+   Sizes are relative to the page's text, so they follow it when the page size changes.
+   line-height:0 keeps bigger words from pushing the line off the ruling. */
+.sheet .fx-s,.sheet .fx-l,:is(.sheet,.o-note) .fx-xl{line-height:0}   /* only resized words need this; plain styled words keep normal line boxes so decorations draw from the first character in every browser */
+:is(.sheet,.o-note) .fx-s{font-size:.82em}
+:is(.sheet,.o-note) .fx-l{font-size:1.22em}
+:is(.sheet,.o-note) .fx-xl{font-size:1.45em}
+:is(.sheet,.o-note) .fx-b{font-weight:700}
+:is(.sheet,.o-note) .fx-c1{color:#b04a3c}
+:is(.sheet,.o-note) .fx-c2{color:#3d6496}
+:is(.sheet,.o-note) .fx-c3{color:#4a7a56}
+:is(.sheet,.o-note) .fx-c4{color:#a8782a}
+:is(.sheet,.o-note) [class*="fx-h"]{-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.06em}
+:is(.sheet,.o-note) .fx-h1{background:linear-gradient(transparent 52%,rgba(246,220,96,.62) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note) .fx-h2{background:linear-gradient(transparent 52%,rgba(242,160,180,.55) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note) .fx-h3{background:linear-gradient(transparent 52%,rgba(150,214,180,.6) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note) .fx-h4{background:linear-gradient(transparent 52%,rgba(150,196,236,.6) 52% 92%,transparent 92%)}
+
+/* ---------- things on the page: photos, sticky notes, washi tape, stickers ---------- */
+.objs{position:absolute;inset:0;z-index:5;pointer-events:none}
+.objs .obj{position:absolute;pointer-events:auto;touch-action:none;transform-origin:50% 50%;cursor:grab}
+.objs.is-locked .obj{pointer-events:none}
+.obj.o-locked{cursor:default}
+.ot-photo .o-frame{position:absolute;inset:0;background:#fdfcf8;box-shadow:0 0 0 .5px rgba(0,0,0,.08)}
+.ot-photo .o-ph{width:100%;background-color:#e7e2d8;background-repeat:no-repeat}
+.ot-photo.f-bare .o-ph{position:absolute;inset:0;height:100%}
+.o-shadow.ot-photo .o-frame,.o-shadow.ot-photo.f-bare .o-ph{box-shadow:0 calc(var(--mm)*.9) calc(var(--mm)*2.2) rgba(60,45,30,.28),0 0 0 .5px rgba(0,0,0,.06)}
+.o-cap{display:flex;align-items:center;justify-content:center;color:#4b423a;letter-spacing:.06em;line-height:1.3;text-align:center;overflow:hidden}
+.o-note{position:absolute;inset:0;padding:9%;color:#4b423a;line-height:1.55;overflow:hidden;white-space:pre-wrap;word-break:break-word;
+  background-image:linear-gradient(135deg,transparent 88%,rgba(0,0,0,.06) 88%)}
+.o-shadow .o-note{box-shadow:0 calc(var(--mm)*.8) calc(var(--mm)*2) rgba(80,60,20,.22)}
+.o-text{display:block;min-width:1em;outline:none;cursor:text}
+.o-cap .o-text{white-space:nowrap}
+.o-text:empty::before{content:attr(data-ph);opacity:.4}
+.objs.is-locked .o-text:empty::before,.o-locked .o-text:empty::before{content:none}
+.o-tape{position:absolute;inset:0;opacity:.85;box-shadow:0 .5px 1.5px rgba(0,0,0,.1);
+  -webkit-mask:linear-gradient(90deg,transparent,#000 1.5%,#000 98.5%,transparent);mask:linear-gradient(90deg,transparent,#000 1.5%,#000 98.5%,transparent)}
+.t-plain{background:#d8c7e3}
+.t-stripe{background:repeating-linear-gradient(90deg,#e9c9b8 0 calc(var(--mm)*1.4),#f6e9df calc(var(--mm)*1.4) calc(var(--mm)*2.8))}
+.t-dot{background-color:#cfdccb;background-image:radial-gradient(#fdfcf8 28%,transparent 31%);background-size:calc(var(--mm)*3) calc(var(--mm)*3)}
+.t-diag{background:repeating-linear-gradient(45deg,#e7d3a9 0 calc(var(--mm)*1.2),#f5ecd9 calc(var(--mm)*1.2) calc(var(--mm)*2.4))}
+.o-img{display:block;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none}
+.o-shadow .o-img{filter:drop-shadow(0 calc(var(--mm)*.6) calc(var(--mm)*.8) rgba(60,45,30,.3))}
+/* selection: frame, four corners to resize, a knob above to turn */
+.o-sel{position:absolute;inset:calc(var(--mm)*-1.4);border:1.5px solid #1f1e1c;pointer-events:none}
+.o-h{position:absolute;width:14px;height:14px;background:#fff;border:1.5px solid #1f1e1c;border-radius:50%;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none}
+.o-h[data-h="nw"]{left:0;top:0;cursor:nwse-resize}.o-h[data-h="se"]{left:100%;top:100%;cursor:nwse-resize}
+.o-h[data-h="ne"]{left:100%;top:0;cursor:nesw-resize}.o-h[data-h="sw"]{left:0;top:100%;cursor:nesw-resize}
+.o-h.o-rot{left:50%;top:-26px;cursor:grab}
+.o-rl{position:absolute;left:50%;top:-20px;height:20px;border-left:1.5px solid #1f1e1c}
+@media (pointer:coarse){.o-h{width:22px;height:22px}.o-h.o-rot{top:-34px}.o-rl{top:-26px;height:26px}}
+.o-locked .o-sel{border-style:dashed}
+/* the small warning next to things that cross the gutter */
+.o-warn{position:absolute;z-index:999;width:22px;height:20px;padding:0;border:0;cursor:pointer;pointer-events:auto;background:none;color:#fff;font:700 12px/22px "Noto Sans TC",sans-serif;text-align:center}
+.o-warn::before{content:"";position:absolute;inset:0;z-index:-1;background:#d9a23a;clip-path:polygon(50% 0,100% 100%,0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.objs.is-locked .o-warn{display:none}
+.o-ph.o-empty{background:repeating-linear-gradient(45deg,#ece8df 0 6px,#e4dfd4 6px 12px);display:grid;place-items:center}
+.o-add{font:500 calc(var(--mm)*2.6)/1.4 "Noto Sans TC",sans-serif;letter-spacing:.06em;color:#4b423a;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.15);padding:calc(var(--mm)*.8) calc(var(--mm)*2);cursor:pointer;pointer-events:auto}
+.objs.is-locked .o-add{display:none}
+.o-cropping .o-ph{cursor:move;outline:2px dashed #1f1e1c;outline-offset:-2px}
+:is(.sheet,.o-note) .fx-x{text-decoration:line-through;text-decoration-thickness:max(1px,.07em);text-decoration-skip-ink:none}

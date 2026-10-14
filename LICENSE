@@ -1,0 +1,31 @@
+Copyright (c) 2026 YuanLiv. All rights reserved.
+
+Exchange Diary（交換日記）的程式碼、介面設計與圖像（不含下方列出的第三方元件）
+著作權屬於 YuanLiv，保留所有權利。
+
+本專案公開放在 GitHub，只是為了透過 GitHub Pages 提供免費的網頁服務。
+你可以透過 https://liviaaaforfun.github.io/exchange-diary/ 免費使用這個工具；
+但未經書面同意，不得複製、修改、散布、再發布或用於商業用途。
+
+用這個工具寫下的日記、照片與輸出的檔案，著作權屬於寫日記的人，與本授權無關。
+
+第三方元件各自依其授權條款提供，不受上述限制：
+
+- 清松手寫體 1／2／3／9（fonts/jh*.woff2）
+  SIL Open Font License 1.1，見 fonts/OFL-JasonHandwriting.txt
+- 辰宇落雁體（fonts/cyly.woff2）
+  SIL Open Font License 1.1，見 fonts/OFL-ChenYuluoyan.txt
+- html-to-image（libs/html-to-image.js）
+  MIT License，見 libs/LICENSE-html-to-image.txt
+- 芫荽、霞鶩文楷 TC、粉圓、昭源甜圓、Noto Serif TC、Noto Sans TC、仙人掌明體、
+  Cormorant Garamond、Quicksand、Jost、Playfair Display
+  由 Google Fonts 提供（SIL Open Font License 1.1），不包含在本專案檔案中
+
+---
+
+Copyright (c) 2026 YuanLiv. All rights reserved.
+
+The source code, interface design and graphics of Exchange Diary (excluding the
+third-party components listed above) may not be copied, modified, distributed or
+used commercially without prior written permission. The project is public only so
+that it can be served free of charge through GitHub Pages.
