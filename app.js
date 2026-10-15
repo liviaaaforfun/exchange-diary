@@ -542,7 +542,7 @@ function packBook(){
     let k=imgKeys.get(o.src);if(!k){k="img:"+Date.now().toString(36)+Math.random().toString(36).slice(2,9);imgKeys.set(o.src,k)}
     used.add(k);if(!savedImgs.has(k)) news.set(k,o.src);return {...o,src:k}};
   const ps=sp=>{const r={...sp};if(Array.isArray(sp.objs)) r.objs=sp.objs.map(po);if(sp.before&&typeof sp.before==="object") r.before=ps(sp.before);return r};
-  return {data:{...book,spreads:book.spreads.map(ps)},used,news};
+  return {data:{...book,appVer:APP_VER,spreads:book.spreads.map(ps)},used,news};
 }
 async function unpackBook(b){
   if(!b||!Array.isArray(b.spreads)) return b;
@@ -554,16 +554,56 @@ async function unpackBook(b){
 }
 let saving=Promise.resolve();
 function save(){saveTimer=0;return saving=saving.then(saveNow,saveNow)}
-let loadFailed=false;      // the saved diary could not be read: never write over it
+let loadFailed=false,failedId="";   // the saved diary could not be read: never write over it
+let leaving=false;                   // switching to another diary: the page is about to reload
 async function saveNow(){
+  if(leaving) return false;
   if(loadFailed){status("上次的日記沒有讀取成功，已暫停自動儲存",true);return false}
   const {data,used,news}=packBook();let ok=true;
   for(const [k,v] of news){if(await Store.set(k,v)) savedImgs.add(k);else{ok=false;break}}
   ok=ok&&await Store.set("book:"+book.id,data)&&await Store.set("current",book.id);
-  if(ok) for(const k of [...savedImgs]) if(!used.has(k)){savedImgs.delete(k);Store.del(k)}
+  if(ok){const keep=snapImgs();for(const k of [...savedImgs]) if(!used.has(k)){savedImgs.delete(k);if(!keep.has(k)) Store.del(k)}}
+  if(ok&&Date.now()-lastSnap(book.id)>SNAP_EVERY) queueSnap("自動保存");
   const t=new Date();status(ok?`已自動儲存 ${pad(t.getHours())}:${pad(t.getMinutes())}`:"裝置空間不足，無法自動儲存，請先匯出備份",!ok);
   return ok;
 }
+
+/* ---------- 自動副本: earlier copies of the diary kept in this browser, so an update or a slip never loses it.
+   A copy is the stored record (text only, photos stay under their img: keys and are kept while any copy uses them). ---------- */
+const APP_VER="2026.10.15";
+const SNAP_PER_BOOK=12,SNAP_TOTAL=40,SNAP_EVERY=12*3600e3;
+let snapIdx=[];   // [{k,book,t,why,n,name,sig,imgs}]
+const snapImgs=()=>{const s=new Set();for(const x of snapIdx) for(const k of x.imgs) s.add(k);return s};
+const lastSnap=id=>snapIdx.reduce((m,x)=>x.book===id&&x.t>m?x.t:m,0);
+const sigOf=str=>{let h=0;for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))|0;return str.length+":"+h};
+function recImgs(data){const s=new Set(),add=o=>{if(o&&typeof o.src==="string"&&o.src.startsWith("img:")) s.add(o.src)};
+  for(const sp of data.spreads||[]){if(!sp) continue;(sp.objs||[]).forEach(add);if(sp.before) (sp.before.objs||[]).forEach(add)}return s}
+async function loadSnaps(){try{const v=await Store.get("snaps");snapIdx=Array.isArray(v)?v.filter(x=>x&&typeof x.k==="string"&&Array.isArray(x.imgs)):[]}catch(e){snapIdx=[]}}
+function queueSnap(why,id){return saving=saving.then(()=>keepCopy(why,id),()=>keepCopy(why,id))}
+async function keepCopy(why,id){
+  try{
+    id=id||book.id;const data=await Store.get("book:"+id);
+    if(!data||!Array.isArray(data.spreads)) return false;
+    const sig=sigOf(JSON.stringify(data)),prev=snapIdx.filter(x=>x.book===id).sort((a,b)=>b.t-a.t)[0];
+    if(prev&&prev.sig===sig) return true;                          // this content is already kept
+    const t=Date.now(),k="snap:"+id+":"+t;
+    if(!await Store.set(k,data)) return false;
+    const all=[...snapIdx,{k,book:id,t,why,n:data.spreads.length,name:String(data.subtitle||"").trim(),sig,imgs:[...recImgs(data)]}].sort((a,b)=>b.t-a.t);
+    const keep=[],drop=[],per={};
+    for(const x of all){per[x.book]=(per[x.book]||0)+1;(per[x.book]<=SNAP_PER_BOOK&&keep.length<SNAP_TOTAL?keep:drop).push(x)}
+    if(!await Store.set("snaps",keep)){Store.del(k);return false}
+    snapIdx=keep;
+    if(drop.length){
+      /* photos of a dropped copy go only when nothing else uses them: the open diary, another copy, or another diary in this browser */
+      const used=new Set([...savedImgs,...snapImgs()]);
+      for(const bk of (await Store.keys()).filter(x=>x.startsWith("book:"))){try{const b=await Store.get(bk);if(b) for(const i of recImgs(b)) used.add(i)}catch(e){}}
+      for(const x of drop){await Store.del(x.k);for(const i of x.imgs) if(!used.has(i)) await Store.del(i)}
+    }
+    return true;
+  }catch(e){console.error(e);return false}
+}
+/* make sure what is on screen is stored, then keep a copy of it (before deleting, importing, restoring…) */
+async function guard(why){if(!loadFailed&&!leaving){clearTimeout(saveTimer);await save()}await queueSnap(why,loadFailed?failedId:book.id)}
 
 /* ---------- editing on the page ---------- */
 spread.addEventListener("input",e=>{
@@ -606,8 +646,9 @@ function move(d){const j=cur+d;if(j<0||j>=book.spreads.length) return;const a=bo
 $("#move-prev").addEventListener("click",()=>move(-1));
 $("#move-next").addEventListener("click",()=>move(1));
 $("#del-spread").addEventListener("click",async()=>{
-  const ok=await confirmBox("刪除這個跨頁？",`第 ${cur+1} 個跨頁的兩頁內容都會刪除，無法復原。`,"刪除");
+  const ok=await confirmBox("刪除這個跨頁？",`第 ${cur+1} 個跨頁的兩頁內容都會刪除。（刪除前會自動留一份副本，可在「備份 → 找回日記本」還原。）`,"刪除");
   if(!ok) return;
+  await guard("刪除跨頁前");
   book.spreads.splice(cur,1);if(!book.spreads.length) book.spreads.push(newSpread());
   cur=Math.min(cur,book.spreads.length-1);renderSpread();touch();
 });
@@ -720,6 +761,7 @@ $("#btn-done").addEventListener("click",()=>{
 $("#btn-revert").addEventListener("click",async()=>{
   const s=book.spreads[cur];if(!s.before) return;
   if(!await confirmBox("還原成修改前？","這次修改的內容會被捨棄，跨頁回到按「修改」之前的樣子。","還原")) return;
+  await guard("還原修改前");
   s.them=s.before.them;s.me=s.before.me;s.objs=s.before.objs||[];delete s.before;s.state="done";renderSpread();touch();
 });
 function toggleMenu(btn,menu,open){menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));if(open){const f=menu.querySelector("button:not(:disabled)");f&&f.focus()}}
@@ -826,12 +868,13 @@ $("#btn-import").addEventListener("click",()=>{$("#menu-backup").hidden=true;
     r.onerror=()=>err("讀不到這個檔案，請再選一次。");r.readAsText(f)});
   $("#import-text").addEventListener("input",()=>{fileText=""});
   dlg.querySelector('[data-act="no"]').onclick=()=>closeDialog(false);
-  dlg.querySelector('[data-act="yes"]').onclick=()=>{
+  dlg.querySelector('[data-act="yes"]').onclick=async()=>{
     let nb;
     try{nb=normalize(JSON.parse(fileText||$("#import-text").value))}
     catch(e){err(e instanceof SyntaxError?"內容不是完整的備份檔，請確認有全部複製。":e.message);return}
-    const oldId=book.id;book=nb;cur=0;closeDialog(true);buildFontSelect();renderAll();
-    save().then(ok=>{if(ok&&oldId!==book.id) Store.del("book:"+oldId)});
+    await guard("匯入前");
+    const oldId=loadFailed?"":book.id;loadFailed=false;book=nb;cur=0;closeDialog(true);buildFontSelect();renderAll();
+    save().then(ok=>{if(ok&&oldId&&oldId!==book.id) Store.del("book:"+oldId)});
     const miss=[book.fonts.them,book.fonts.me].filter(id=>isUserFont(id)&&!userFonts.some(f=>f.id===id));
     if(miss.length) toast(`這本日記用了「${miss.map(id=>book.fontNames[id]||"自訂字體").join("、")}」，這台裝置還沒有，請在字體選單重新上傳。`);
   };
@@ -846,7 +889,12 @@ $("#notice-ok").addEventListener("click",()=>{$("#notice").hidden=true;meta.noti
   state.show=["them","me","both"].includes(meta.show)?meta.show:"both";
   if(state.show!=="both") panelWho=state.show;
   const id=await Store.get("current");let saved=id?await Store.get("book:"+id):null;
-  try{book=saved?normalize(await unpackBook(saved)):newBook()}catch(e){book=newBook();loadFailed=!!saved;console.error(e)}
+  await loadSnaps();
+  /* a new version of the page (or an older one still cached): keep a copy of the diary as it was, before anything is written */
+  if(saved){if(meta.ver!==APP_VER||saved.appVer!==APP_VER) await keepCopy(meta.ver&&meta.ver!==APP_VER?`更新前（${meta.ver} 版）`:"更新前",id);
+    else if(Date.now()-lastSnap(id)>SNAP_EVERY) await keepCopy("自動保存",id)}
+  if(meta.ver!==APP_VER){meta.ver=APP_VER;Store.set("meta",meta)}
+  try{book=saved?normalize(await unpackBook(saved)):newBook()}catch(e){book=newBook();loadFailed=!!saved;failedId=id;console.error(e)}
   await loadUserFonts();
   {const miss=[book.fonts.them,book.fonts.me].filter(id=>isUserFont(id)&&!userFonts.some(f=>f.id===id));
    if(miss.length) setTimeout(()=>toast(`這本日記用了「${miss.map(id=>book.fontNames[id]||"自訂字體").join("、")}」，這台裝置還沒有，請在字體選單重新上傳。`),800)}
@@ -876,9 +924,21 @@ async function recoverBooks(failed,found){
     ${list.length?`<ul class="rb-list">${list.map(x=>`<li><div><b>${esc(x.name)}</b><small>${x.n} 個跨頁${x.first?"・從 "+esc(x.first):""}${x.when?"・最後修改 "+fmt(x.when):""}${x.id===book.id&&!failed?"・目前打開中":""}</small></div>
       <button type="button" class="btn${x.id===book.id&&!failed?" quiet":" solid"}" data-open="${esc(x.id)}"${x.id===book.id&&!failed?" disabled":""}>打開</button></li>`).join("")}</ul>`
       :"<p>這個瀏覽器裡沒有其他日記本。如果你是在別的瀏覽器或從主畫面寫的，請到那裡打開。</p>"}
+    ${snapIdx.length?`<h3 class="rb-h">自動保存的副本</h3><p class="rb-note">每次網頁更新、每天第一次打開，以及刪除跨頁、匯入、還原之前，都會自動留一份。還原時，現在的內容也會先留一份副本。</p>
+      <ul class="rb-list">${[...snapIdx].sort((a,b)=>b.t-a.t).map(x=>`<li><div><b>${esc(x.name||"（沒有名稱）")}</b><small>${fmt(new Date(x.t))}・${esc(x.why)}・${x.n} 個跨頁</small></div>
+      <button type="button" class="btn quiet" data-snap="${esc(x.k)}">還原</button></li>`).join("")}</ul>`:""}
     <div class="row">${found?'<button type="button" class="btn quiet" data-act="new">開一本新的</button>':""}<button type="button" class="btn quiet" data-act="ok">關閉</button></div>`);
   dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
   const nw=dlg.querySelector('[data-act="new"]');if(nw) nw.onclick=async()=>{closeDialog(true);await save()};
-  dlg.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{await Store.set("current",b.dataset.open);location.reload()});
+  const go=async id=>{if(!loadFailed){clearTimeout(saveTimer);await save()}leaving=true;await saving;await Store.set("current",id);location.reload()};
+  dlg.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go(b.dataset.open));
+  dlg.querySelectorAll("[data-snap]").forEach(b=>b.onclick=async()=>{
+    const x=snapIdx.find(s=>s.k===b.dataset.snap);if(!x) return;
+    if(!await confirmBox("還原這份副本？",`日記本會回到 ${fmt(new Date(x.t))} 的樣子。現在的內容會先另存一份副本，之後想改回來也可以。`,"還原")) return;
+    const data=await Store.get(x.k);if(!data||!Array.isArray(data.spreads)){toast("這份副本讀不到了");return}
+    if(!loadFailed&&x.book===book.id){clearTimeout(saveTimer);await save()}
+    await queueSnap("還原前",x.book);leaving=true;await saving;
+    if(!await Store.set("book:"+x.book,data)){leaving=false;toast("裝置空間不足，無法還原");return}
+    await Store.set("current",x.book);location.reload()});
 }
 $("#btn-recover").addEventListener("click",()=>{$("#menu-backup").hidden=true;recoverBooks(false)});
