@@ -29,7 +29,11 @@ const Store=(()=>{
     try{const db=await open();await new Promise((res,rej)=>{const tx=db.transaction(ST,"readwrite");tx.objectStore(ST).delete(k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
     catch(e){try{localStorage.removeItem(DBN+":"+k)}catch(e2){}}
   }
-  return {get,set,del};
+  async function keys(){
+    try{const db=await open();return await new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).getAllKeys();q.onsuccess=()=>res(q.result.map(String));q.onerror=()=>rej(q.error)})}
+    catch(e){try{return Object.keys(localStorage).filter(k=>k.startsWith(DBN+":")).map(k=>k.slice(DBN.length+1))}catch(e2){return []}}
+  }
+  return {get,set,del,keys};
 })();
 
 /* ---------- book model ---------- */
@@ -550,7 +554,9 @@ async function unpackBook(b){
 }
 let saving=Promise.resolve();
 function save(){saveTimer=0;return saving=saving.then(saveNow,saveNow)}
+let loadFailed=false;      // the saved diary could not be read: never write over it
 async function saveNow(){
+  if(loadFailed){status("上次的日記沒有讀取成功，已暫停自動儲存",true);return false}
   const {data,used,news}=packBook();let ok=true;
   for(const [k,v] of news){if(await Store.set(k,v)) savedImgs.add(k);else{ok=false;break}}
   ok=ok&&await Store.set("book:"+book.id,data)&&await Store.set("current",book.id);
@@ -840,11 +846,39 @@ $("#notice-ok").addEventListener("click",()=>{$("#notice").hidden=true;meta.noti
   state.show=["them","me","both"].includes(meta.show)?meta.show:"both";
   if(state.show!=="both") panelWho=state.show;
   const id=await Store.get("current");let saved=id?await Store.get("book:"+id):null;
-  try{book=saved?normalize(await unpackBook(saved)):newBook()}catch(e){book=newBook()}
+  try{book=saved?normalize(await unpackBook(saved)):newBook()}catch(e){book=newBook();loadFailed=!!saved;console.error(e)}
   await loadUserFonts();
   {const miss=[book.fonts.them,book.fonts.me].filter(id=>isUserFont(id)&&!userFonts.some(f=>f.id===id));
    if(miss.length) setTimeout(()=>toast(`這本日記用了「${miss.map(id=>book.fontNames[id]||"自訂字體").join("、")}」，這台裝置還沒有，請在字體選單重新上傳。`),800)}
   renderAll();
   if(!meta.noticeSeen&&typeof firstRun==="function") setTimeout(firstRun,400);
-  if(!saved){await save()} else status("已載入上次的內容");
+  if(loadFailed){status("上次的日記沒有讀取成功，已暫停自動儲存",true);setTimeout(()=>recoverBooks(true),600);return}
+  if(!saved){
+    /* nothing marked as current, but older diaries may still be in this browser: offer them before starting fresh */
+    const others=(await Store.keys()).filter(k=>k.startsWith("book:"));
+    if(others.length){setTimeout(()=>recoverBooks(false,true),900);status("找到之前的日記本");return}
+    await save();
+  } else status("已載入上次的內容");
 })();
+
+/* ---------- 找回日記本: every diary this browser still keeps ---------- */
+async function recoverBooks(failed,found){
+  const ids=(await Store.keys()).filter(k=>k.startsWith("book:")).map(k=>k.slice(5));
+  const list=[];
+  for(const id of ids){try{const b=await Store.get("book:"+id);if(!b||!Array.isArray(b.spreads)) continue;
+    list.push({id,name:(b.subtitle||"").trim()||"（沒有名稱）",n:b.spreads.length,
+      when:b.updated?new Date(b.updated):null,first:(b.spreads.find(x=>x&&x.them&&x.them.date)||{them:{}}).them.date||""})}catch(e){}}
+  list.sort((a,b)=>(b.when||0)-(a.when||0));
+  const fmt=d=>d?`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`:"";
+  const lead=failed?"<p>上次的日記沒有讀取成功。為了保護你的資料，這次不會自動儲存，原本的內容也還在這台裝置上。</p>"
+    :found?"<p>這個瀏覽器裡還有之前寫的日記本，要打開哪一本？</p>":"<p>這個瀏覽器裡保存的日記本都在這裡。打開其中一本，畫面上的日記本會換成它，其他的仍會保留。</p>";
+  openDialog(`<h2 id="dlg-title">找回日記本</h2>${lead}
+    ${list.length?`<ul class="rb-list">${list.map(x=>`<li><div><b>${esc(x.name)}</b><small>${x.n} 個跨頁${x.first?"・從 "+esc(x.first):""}${x.when?"・最後修改 "+fmt(x.when):""}${x.id===book.id&&!failed?"・目前打開中":""}</small></div>
+      <button type="button" class="btn${x.id===book.id&&!failed?" quiet":" solid"}" data-open="${esc(x.id)}"${x.id===book.id&&!failed?" disabled":""}>打開</button></li>`).join("")}</ul>`
+      :"<p>這個瀏覽器裡沒有其他日記本。如果你是在別的瀏覽器或從主畫面寫的，請到那裡打開。</p>"}
+    <div class="row">${found?'<button type="button" class="btn quiet" data-act="new">開一本新的</button>':""}<button type="button" class="btn quiet" data-act="ok">關閉</button></div>`);
+  dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
+  const nw=dlg.querySelector('[data-act="new"]');if(nw) nw.onclick=async()=>{closeDialog(true);await save()};
+  dlg.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{await Store.set("current",b.dataset.open);location.reload()});
+}
+$("#btn-recover").addEventListener("click",()=>{$("#menu-backup").hidden=true;recoverBooks(false)});
