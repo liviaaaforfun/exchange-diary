@@ -79,7 +79,7 @@ function objHTML(o){
     else{const F=FRAMES[o.frame]||FRAMES.polaroid,k=o.w/F.W;
       inner=`<div class="o-frame" style="padding:calc(var(--mm)*${(F.bt*k).toFixed(2)}) calc(var(--mm)*${(F.b*k).toFixed(2)}) 0">
         ${ph}
-        <div class="o-cap" style="height:calc(var(--mm)*${(F.bb*k).toFixed(2)});font-size:calc(var(--mm)*${(3.4*Math.sqrt(k)).toFixed(2)});${font}"><span class="o-text" data-key="cap" data-ph="寫一句話…">${esc(o.cap||"")}</span></div></div>`}
+        <div class="o-cap" style="height:calc(var(--mm)*${(F.bb*k).toFixed(2)});font-size:calc(var(--mm)*${(3.4*Math.sqrt(k)*(o.cs||1)).toFixed(2)});${font}"><span class="o-text" data-key="cap" data-ph="寫一句話…">${capHTML(o)}</span></div></div>`}
   }else if(o.type==="note"){
     inner=`<div class="o-note" style="background-color:${NOTE_COLORS[o.color||0]};font-size:calc(var(--mm)*${(o.w*(o.fs||.088)).toFixed(2)});${font}"><span class="o-text" data-key="text" data-ph="寫點什麼…">${noteHTML(o)}</span></div>`;
   }else if(o.type==="tape"){
@@ -269,9 +269,9 @@ function endCrop(){if(!cropId) return;cropId=null;renderObjs()}
 document.addEventListener("input",e=>{const t=e.target.closest&&e.target.closest(".objs .o-text");if(!t) return;
   const o=findObj(t.closest(".obj").dataset.oid);if(!o) return;
   if(t.dataset.key==="text") noteStore(o,readLines(t));          // sticky notes keep styled words
-  else o[t.dataset.key]=t.innerText.replace(/\n$/,"");
+  else if(t.dataset.key==="cap") capStore(o,readLines(t));       // so do polaroid captions
   // keep the twin on the other page in step
-  layers.forEach(L=>{const x=L.querySelector(`.obj[data-oid="${o.id}"] .o-text[data-key="${t.dataset.key}"]`);if(x&&x!==t){if(t.dataset.key==="text") x.innerHTML=noteHTML(o);else x.textContent=o[t.dataset.key]}});
+  layers.forEach(L=>{const x=L.querySelector(`.obj[data-oid="${o.id}"] .o-text[data-key="${t.dataset.key}"]`);if(x&&x!==t){if(t.dataset.key==="text") x.innerHTML=noteHTML(o);else if(t.dataset.key==="cap") x.innerHTML=capHTML(o);else x.textContent=o[t.dataset.key]}});
   book.spreads[cur].modified=Date.now();touch()});
 document.addEventListener("paste",e=>{const t=e.target.closest&&e.target.closest(".objs .o-text");if(!t) return;e.preventDefault();
   document.execCommand("insertText",false,(e.clipboardData.getData("text/plain")||""))});
@@ -283,7 +283,8 @@ function barHTML(o){
   const g=x=>`<span class="g">${x}</span>`,b=(act,txt,on,cls="")=>`<button type="button" data-act="${act}" class="${cls}"${on!==undefined?` aria-pressed="${on}"`:""}>${txt}</button>`;
   let first="";
   if(o.type==="photo"&&o.id===cropId) return g(b("zout","縮小")+b("zin","放大"))+`<span class="g hint-g">拖曳照片調整位置</span>`+g(b("cropdone","完成",true));
-  if(o.type==="photo") first=g(b("frame",`${FRAMES[o.frame||"polaroid"].name} ▾`)+(o.src?b("crop","取景"):""));
+  if(o.type==="photo") first=g(b("frame",`${FRAMES[o.frame||"polaroid"].name} ▾`)+(o.src?b("crop","取景"):""))+
+    ((o.frame||"polaroid")!=="bare"?`<span class="g" role="group" aria-label="說明文字大小">${b("capdn","字−")}${b("capup","字＋")}</span>`:"");
   if(o.type==="note") first=`<span class="g dots">${NOTE_COLORS.map((c,i)=>`<button type="button" data-act="color" data-v="${i}" aria-label="便利貼顏色 ${i+1}" aria-pressed="${(o.color||0)===i}"><i style="background:${c}"></i></button>`).join("")}</span>`;
   if(o.type==="tape") first=`<span class="g dots">${TAPES.map((t,i)=>`<button type="button" data-act="pattern" data-v="${i}" aria-label="紙膠帶花樣 ${i+1}" aria-pressed="${(o.pattern||0)===i}"><i class="tw t-${t}"></i></button>`).join("")}</span>`;
   if(o.lock) return g(b("lock","解除鎖定",true));
@@ -330,6 +331,7 @@ function act(a,v,btn){
   else if(a==="cropdone"){endCrop();return}
   else if(a==="zin"||a==="zout"){zoomCrop(a==="zin"?1:-1);return}
   else if(a==="shadow") o.shadow=!o.shadow;
+  else if(a==="capdn"||a==="capup"){const c=Math.round(((o.cs||1)+(a==="capup"?.1:-.1))*10)/10;o.cs=Math.max(.6,Math.min(2,c));if(o.cs===1) delete o.cs}
   else if(a==="color"){o.color=+v;lastNote=+v}
   else if(a==="pattern"){o.pattern=+v;lastTape=+v}
   else if(a==="frame"){

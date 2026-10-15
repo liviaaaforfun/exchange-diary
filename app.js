@@ -62,6 +62,8 @@ function objsIn(a){
     if(o.lock===true) n.lock=true;if(o.shadow===true) n.shadow=true;
     if(o.type==="photo"){if(!img(o.src)&&o.src!=="") continue;n.src=o.src||"";n.ar=num(o.ar,1.33,.1,10);
       n.frame=["polaroid","square","wide","bare"].includes(o.frame)?o.frame:"polaroid";n.cap=str(o.cap);
+      if(o.cs!==undefined) n.cs=num(o.cs,1,.6,2);
+      if(Array.isArray(o.capfx)){try{const L=tidyLines(o.capfx.map(l=>Array.isArray(l)?l.filter(r=>r&&typeof r.t==="string").map(r=>({t:r.t,k:String(r.k||"")})):[]),true);if(hasFx(L)&&linesText(L)===n.cap) n.capfx=L}catch(e){}}
       if(o.crop&&typeof o.crop==="object") n.crop={z:num(o.crop.z,1,1,6),x:num(o.crop.x,50,0,100),y:num(o.crop.y,50,0,100)}}
     if(o.type==="sticker"){if(!img(o.src)) continue;n.src=o.src;n.ar=num(o.ar,1,.1,10)}
     if(o.type==="note"){n.text=str(o.text);if(Array.isArray(o.fx)){try{const L=tidyLines(o.fx.map(l=>Array.isArray(l)?l.filter(r=>r&&typeof r.t==="string").map(r=>({t:r.t,k:String(r.k||"")})):[]),true);if(hasFx(L)&&linesText(L)===n.text) n.fx=L}catch(e){}}n.color=Math.round(num(o.color,0,0,4));if(o.fs!==undefined) n.fs=num(o.fs,.088,.03,.12)}
@@ -209,6 +211,11 @@ const noteLines=o=>o.fx&&linesText(o.fx)===o.text?o.fx:plainLines(o.text);
 const noteHTML=o=>noteLines(o).map(l=>l.map(runHTML).join("")).join("\n");
 function noteStore(o,L){o.text=linesText(L);if(hasFx(L)) o.fx=L;else delete o.fx}
 function noteRender(o){for(const t of document.querySelectorAll(`#spread .obj[data-oid="${o.id}"] .o-note .o-text`)) t.innerHTML=noteHTML(o)}
+/* polaroid captions work the same way: o.cap plain, o.capfx only when something is styled; o.cs scales the size */
+const capLines=o=>o.capfx&&linesText(o.capfx)===(o.cap||"")?o.capfx:plainLines(o.cap||"");
+const capHTML=o=>capLines(o).map(l=>l.map(runHTML).join("")).join("\n");
+function capStore(o,L){o.cap=linesText(L);if(hasFx(L)) o.capfx=L;else delete o.capfx}
+function capRender(o){for(const t of document.querySelectorAll(`#spread .obj[data-oid="${o.id}"] .o-cap .o-text`)) t.innerHTML=capHTML(o)}
 /* selection ↔ text offsets (a line break counts as one character, as in linesText) */
 function textOffset(el,node,off){
   const r=document.createRange();r.setStart(el,0);r.setEnd(node,off);
@@ -229,7 +236,7 @@ const fxbar=$("#fxbar");let fxSel=null,barDown=false;
 function grabSel(){
   const sel=getSelection();if(!sel.rangeCount||sel.isCollapsed){fxSel=null;return null}
   const r=sel.getRangeAt(0),startEl=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentNode;
-  const el=startEl.closest&&startEl.closest('.spread [data-field],.objs .o-note .o-text');
+  const el=startEl.closest&&startEl.closest('.spread [data-field],.objs .o-note .o-text,.objs .o-cap .o-text');
   if(!el||el.contentEditable!=="true"){fxSel=null;return null}
   const a=textOffset(el,r.startContainer,r.startOffset);
   let b=el.contains(r.endContainer)?textOffset(el,r.endContainer,r.endOffset):linesText(readLines(el)).length;
@@ -260,7 +267,8 @@ function applyFx(op,v){
     for(const x of seg){for(const t of group) x.k.delete(t);if(!on) x.k.add(v)}
   }
   let L=charsToLines(ch);
-  if(note){noteStore(note,L);s.modified=Date.now();noteRender(note)}
+  if(note&&el.dataset.key==="cap"){capStore(note,L);s.modified=Date.now();capRender(note)}
+  else if(note){noteStore(note,L);s.modified=Date.now();noteRender(note)}
   else{if(!MULTI.has(f)) L=tidyLines(L,false);const side=who(el.closest(".page").dataset.side);
     storeLines(s[side],f,L);s.modified=Date.now();delete s.sample;renderLines(el,fieldLines(s[side],f))}
   const sel=getSelection(),r=document.createRange(),[n1,o1]=placeAt(el,a),[n2,o2]=placeAt(el,b);
@@ -338,7 +346,7 @@ addEventListener("resize",()=>{fxSel=null;fxbar.hidden=true});
 const MM2PT=72/25.4,LH_MIN=4.5,LH_MAX=10,PT_MIN=7,PT_CAP=16;
 const snap=v=>Math.round(v*2)/2;
 const defaultPt=lhn=>lhn*.55*MM2PT;
-const maxPt=lhn=>Math.min(PT_CAP,Math.floor(lhn*.8*MM2PT*2)/2);
+const maxPt=lhn=>Math.min(PT_CAP,Math.floor(lhn*.95*MM2PT*2)/2);   // up to 95% of the line pitch (was 80%, 10/15)
 function pageGeom(lh,st=book.style){
   const g=GEO[st.frame],gt=g.ft+g.gp,gb=g.fb+g.gp,avail=210-gt-gb,T=THEMES[st.theme];
   const minR=Math.ceil(avail/LH_MAX),maxR=Math.floor(avail/LH_MIN);

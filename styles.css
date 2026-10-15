@@ -375,20 +375,20 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 /* ---------- styled words inside a field (selected text: size, bold, ink colour, highlighter) ----------
    Sizes are relative to the page's text, so they follow it when the page size changes.
    line-height:0 keeps bigger words from pushing the line off the ruling. */
-.sheet .fx-s,.sheet .fx-l,:is(.sheet,.o-note) .fx-xl{line-height:0}   /* only resized words need this; plain styled words keep normal line boxes so decorations draw from the first character in every browser */
-:is(.sheet,.o-note) .fx-s{font-size:.82em}
-:is(.sheet,.o-note) .fx-l{font-size:1.22em}
-:is(.sheet,.o-note) .fx-xl{font-size:1.45em}
-:is(.sheet,.o-note) .fx-b{font-weight:700}
-:is(.sheet,.o-note) .fx-c1{color:#b04a3c}
-:is(.sheet,.o-note) .fx-c2{color:#3d6496}
-:is(.sheet,.o-note) .fx-c3{color:#4a7a56}
-:is(.sheet,.o-note) .fx-c4{color:#a8782a}
-:is(.sheet,.o-note) [class*="fx-h"]{-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.06em}
-:is(.sheet,.o-note) .fx-h1{background:linear-gradient(transparent 52%,rgba(246,220,96,.62) 52% 92%,transparent 92%)}
-:is(.sheet,.o-note) .fx-h2{background:linear-gradient(transparent 52%,rgba(242,160,180,.55) 52% 92%,transparent 92%)}
-:is(.sheet,.o-note) .fx-h3{background:linear-gradient(transparent 52%,rgba(150,214,180,.6) 52% 92%,transparent 92%)}
-:is(.sheet,.o-note) .fx-h4{background:linear-gradient(transparent 52%,rgba(150,196,236,.6) 52% 92%,transparent 92%)}
+.sheet .fx-s,.sheet .fx-l,:is(.sheet,.o-note,.o-cap) .fx-xl{line-height:0}   /* only resized words need this; plain styled words keep normal line boxes so decorations draw from the first character in every browser */
+:is(.sheet,.o-note,.o-cap) .fx-s{font-size:.82em}
+:is(.sheet,.o-note,.o-cap) .fx-l{font-size:1.22em}
+:is(.sheet,.o-note,.o-cap) .fx-xl{font-size:1.45em}
+:is(.sheet,.o-note,.o-cap) .fx-b{font-weight:700}
+:is(.sheet,.o-note,.o-cap) .fx-c1{color:#b04a3c}
+:is(.sheet,.o-note,.o-cap) .fx-c2{color:#3d6496}
+:is(.sheet,.o-note,.o-cap) .fx-c3{color:#4a7a56}
+:is(.sheet,.o-note,.o-cap) .fx-c4{color:#a8782a}
+:is(.sheet,.o-note,.o-cap) [class*="fx-h"]{-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-inline:.06em}
+:is(.sheet,.o-note,.o-cap) .fx-h1{background:linear-gradient(transparent 52%,rgba(246,220,96,.62) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note,.o-cap) .fx-h2{background:linear-gradient(transparent 52%,rgba(242,160,180,.55) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note,.o-cap) .fx-h3{background:linear-gradient(transparent 52%,rgba(150,214,180,.6) 52% 92%,transparent 92%)}
+:is(.sheet,.o-note,.o-cap) .fx-h4{background:linear-gradient(transparent 52%,rgba(150,196,236,.6) 52% 92%,transparent 92%)}
 
 /* ---------- things on the page: photos, sticky notes, washi tape, stickers ---------- */
 .objs{position:absolute;inset:0;z-index:5;pointer-events:none}
@@ -404,7 +404,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
   background-image:linear-gradient(135deg,transparent 88%,rgba(0,0,0,.06) 88%)}
 .o-shadow .o-note{box-shadow:0 calc(var(--mm)*.8) calc(var(--mm)*2) rgba(80,60,20,.22)}
 .o-text{display:block;min-width:1em;outline:none;cursor:text}
-.o-cap .o-text{white-space:nowrap}
+.o-cap .o-text{white-space:pre;line-height:1.15}
 .o-text:empty::before{content:attr(data-ph);opacity:.4}
 .objs.is-locked .o-text:empty::before,.o-locked .o-text:empty::before{content:none}
 .o-tape{position:absolute;inset:0;opacity:.85;box-shadow:0 .5px 1.5px rgba(0,0,0,.1);
@@ -432,4 +432,4 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .o-add{font:500 calc(var(--mm)*2.6)/1.4 "Noto Sans TC",sans-serif;letter-spacing:.06em;color:#4b423a;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.15);padding:calc(var(--mm)*.8) calc(var(--mm)*2);cursor:pointer;pointer-events:auto}
 .objs.is-locked .o-add{display:none}
 .o-cropping .o-ph{cursor:move;outline:2px dashed #1f1e1c;outline-offset:-2px}
-:is(.sheet,.o-note) .fx-x{text-decoration:line-through;text-decoration-thickness:max(1px,.07em);text-decoration-skip-ink:none}
+:is(.sheet,.o-note,.o-cap) .fx-x{text-decoration:line-through;text-decoration-thickness:max(1px,.07em);text-decoration-skip-ink:none}
