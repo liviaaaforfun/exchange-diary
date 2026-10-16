@@ -604,7 +604,7 @@ async function saveNow(){
 
 /* ---------- 自動副本: earlier copies of the diary kept in this browser, so an update or a slip never loses it.
    A copy is the stored record (text only, photos stay under their img: keys and are kept while any copy uses them). ---------- */
-const APP_VER="2026.10.16c";
+const APP_VER="2026.10.16d";
 const SNAP_PER_BOOK=12,SNAP_TOTAL=40,SNAP_EVERY=12*3600e3;
 let snapIdx=[];   // [{k,book,t,why,n,name,sig,imgs}]
 const snapImgs=()=>{const s=new Set();for(const x of snapIdx) for(const k of x.imgs) s.add(k);return s};

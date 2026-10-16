@@ -162,7 +162,9 @@ function pick(kind,at,slot){
   picker.value="";
   picker.onchange=async()=>{const f=picker.files[0];if(!f) return;
     try{
-      if(slot){const o=findObj(slot);if(!o) return;const im=await readImage(f,1600,false);o.src=im.src;o.ar=im.ar;delete o.crop;
+      if(slot){const o=findObj(slot);if(!o) return;const im=await readImage(f,1600,false);
+        if(o.src&&typeof guard==="function") await guard("換照片前");   // the old picture stays in a copy
+        o.src=im.src;o.ar=im.ar;delete o.crop;
         book.spreads[cur].modified=Date.now();renderObjs();touch();return}
       if(kind==="sticker"){const im=await readImage(f,1200,true);addObj({type:"sticker",src:im.src,ar:im.ar,w:DEF_W.sticker,shadow:true},at)}
       else{const im=await readImage(f,1600,false);addObj({type:"photo",frame:"polaroid",src:im.src,ar:im.ar,w:DEF_W.polaroid,shadow:true,cap:""},at)}
@@ -283,7 +285,7 @@ function barHTML(o){
   const g=x=>`<span class="g">${x}</span>`,b=(act,txt,on,cls="")=>`<button type="button" data-act="${act}" class="${cls}"${on!==undefined?` aria-pressed="${on}"`:""}>${txt}</button>`;
   let first="";
   if(o.type==="photo"&&o.id===cropId) return g(b("zout","縮小")+b("zin","放大"))+`<span class="g hint-g">拖曳照片調整位置</span>`+g(b("cropdone","完成",true));
-  if(o.type==="photo") first=g(b("frame",`${FRAMES[o.frame||"polaroid"].name} ▾`)+(o.src?b("crop","取景"):""))+
+  if(o.type==="photo") first=g(b("frame",`${FRAMES[o.frame||"polaroid"].name} ▾`)+(o.src?b("crop","取景")+b("swap","換照片"):""))+
     ((o.frame||"polaroid")!=="bare"?`<span class="g" role="group" aria-label="說明文字大小">${b("capdn","字−")}${b("capup","字＋")}</span>`:"");
   if(o.type==="note") first=`<span class="g dots">${NOTE_COLORS.map((c,i)=>`<button type="button" data-act="color" data-v="${i}" aria-label="便利貼顏色 ${i+1}" aria-pressed="${(o.color||0)===i}"><i style="background:${c}"></i></button>`).join("")}</span>`;
   if(o.type==="tape") first=`<span class="g dots">${TAPES.map((t,i)=>`<button type="button" data-act="pattern" data-v="${i}" aria-label="紙膠帶花樣 ${i+1}" aria-pressed="${(o.pattern||0)===i}"><i class="tw t-${t}"></i></button>`).join("")}</span>`;
@@ -328,6 +330,7 @@ function act(a,v,btn){
   else if(a==="dup"){const c=JSON.parse(JSON.stringify(o));c.id=uidO();c.x+=book.swap?-6:6;c.y+=6;c.lock=false;a2.push(c);selId=c.id}
   else if(a==="lock") o.lock=!o.lock;
   else if(a==="crop"){cropId=o.id;renderObjs();return}
+  else if(a==="swap"){pick("photo",null,o.id);return}
   else if(a==="cropdone"){endCrop();return}
   else if(a==="zin"||a==="zout"){zoomCrop(a==="zin"?1:-1);return}
   else if(a==="shadow") o.shadow=!o.shadow;
