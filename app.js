@@ -13,27 +13,61 @@ const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const blankSide=()=>Object.fromEntries(FIELDS.map(f=>[f,""]));
 
 document.documentElement.lang="zh-Hant-TW";
-/* ---------- storage: IndexedDB, then localStorage, then nothing ---------- */
+/* ---------- storage ----------
+   One place per browser, decided once when the page opens: IndexedDB. Earlier versions quietly switched to localStorage
+   whenever IndexedDB hiccuped, which could split a diary between two places and show an empty book. Now:
+   · IndexedDB opens (with retries) → it is the only place used; a failed step is retried on a fresh connection, never sent elsewhere
+   · IndexedDB is missing altogether, or this browser's diary already lives in localStorage → localStorage
+   · IndexedDB fails to open → "none": nothing is written, the page asks for a reload */
 const Store=(()=>{
-  const DBN="exchange-diary",ST="kv";let dbp=null;
-  const open=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}));
-  async function get(k){
-    try{const db=await open();return await new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
-    catch(e){try{const v=localStorage.getItem(DBN+":"+k);return v?JSON.parse(v):undefined}catch(e2){return undefined}}
+  const DBN="exchange-diary",ST="kv",LP=DBN+":";let dbp=null,mode="";
+  const errs=[];const note=e=>{if(errs.length<8) errs.push(String(e&&e.name||e)+": "+String(e&&e.message||"").slice(0,90))};
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const openOnce=()=>new Promise((res,rej)=>{let r;try{r=indexedDB.open(DBN,1)}catch(e){rej(e);return}
+    const t=setTimeout(()=>rej(new Error("open timed out")),8000);
+    r.onupgradeneeded=()=>r.result.createObjectStore(ST);
+    r.onsuccess=()=>{clearTimeout(t);const db=r.result;db.onversionchange=()=>{db.close();dbp=null};db.onclose=()=>{dbp=null};res(db)};
+    r.onerror=()=>{clearTimeout(t);rej(r.error)};r.onblocked=()=>note(new Error("open blocked"))});
+  async function openDB(){
+    if(dbp) return dbp;
+    for(let i=0;i<3;i++){try{dbp=Promise.resolve(await openOnce());return dbp}catch(e){note(e);dbp=null;await wait(300*(i+1))}}
+    throw new Error("IndexedDB unavailable");
   }
-  async function set(k,v){
-    try{const db=await open();await new Promise((res,rej)=>{const tx=db.transaction(ST,"readwrite");tx.objectStore(ST).put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)});return true}
-    catch(e){try{localStorage.setItem(DBN+":"+k,JSON.stringify(v));return true}catch(e2){return false}}
+  const lsKeys=()=>{try{return Object.keys(localStorage).filter(k=>k.startsWith(LP)).map(k=>k.slice(LP.length))}catch(e){return []}};
+  const lsGet=k=>{try{const v=localStorage.getItem(LP+k);return v?JSON.parse(v):undefined}catch(e){return undefined}};
+  async function ready(){
+    if(mode) return mode;
+    if(typeof indexedDB==="undefined"||!indexedDB){mode="local";return mode}
+    try{await openDB();mode="idb"}
+    catch(e){mode=lsKeys().includes("current")?"local":"none"}
+    return mode;
   }
-  async function del(k){
-    try{const db=await open();await new Promise((res,rej)=>{const tx=db.transaction(ST,"readwrite");tx.objectStore(ST).delete(k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
-    catch(e){try{localStorage.removeItem(DBN+":"+k)}catch(e2){}}
+  /* one IndexedDB step; if the connection was lost (it happens on phones after the app was in the background), reopen and try once more */
+  async function run(kind,fn){
+    for(let i=0;i<2;i++){
+      try{const db=await openDB();return await new Promise((res,rej)=>{const tx=db.transaction(ST,kind);let out;
+        const q=fn(tx.objectStore(ST));if(q) q.onsuccess=()=>{out=q.result};
+        tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error("aborted"))})}
+      catch(e){note(e);dbp=null;if(i) throw e;await wait(200)}
+    }
   }
-  async function keys(){
-    try{const db=await open();return await new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).getAllKeys();q.onsuccess=()=>res(q.result.map(String));q.onerror=()=>rej(q.error)})}
-    catch(e){try{return Object.keys(localStorage).filter(k=>k.startsWith(DBN+":")).map(k=>k.slice(DBN.length+1))}catch(e2){return []}}
-  }
-  return {get,set,del,keys};
+  async function get(k){await ready();
+    if(mode==="local") return lsGet(k);if(mode!=="idb") throw new Error("storage unavailable");
+    return run("readonly",st=>st.get(k))}
+  async function set(k,v){await ready();
+    if(mode==="local"){try{localStorage.setItem(LP+k,JSON.stringify(v));return true}catch(e){note(e);return false}}
+    if(mode!=="idb") return false;
+    try{await run("readwrite",st=>{st.put(v,k)});return true}catch(e){return false}}
+  async function del(k){await ready();
+    if(mode==="local"){try{localStorage.removeItem(LP+k)}catch(e){}return}
+    if(mode!=="idb") return;
+    try{await run("readwrite",st=>{st.delete(k)})}catch(e){}}
+  async function keys(){await ready();
+    if(mode==="local") return lsKeys();if(mode!=="idb") throw new Error("storage unavailable");
+    return (await run("readonly",st=>st.getAllKeys())).map(String)}
+  /* what an older version may have left in localStorage while this browser uses IndexedDB */
+  const legacy={keys:()=>mode==="idb"?lsKeys():[],get:lsGet};
+  return {ready,get,set,del,keys,legacy,errs,get mode(){return mode}};
 })();
 
 /* ---------- book model ---------- */
@@ -570,7 +604,7 @@ async function saveNow(){
 
 /* ---------- 自動副本: earlier copies of the diary kept in this browser, so an update or a slip never loses it.
    A copy is the stored record (text only, photos stay under their img: keys and are kept while any copy uses them). ---------- */
-const APP_VER="2026.10.16";
+const APP_VER="2026.10.16c";
 const SNAP_PER_BOOK=12,SNAP_TOTAL=40,SNAP_EVERY=12*3600e3;
 let snapIdx=[];   // [{k,book,t,why,n,name,sig,imgs}]
 const snapImgs=()=>{const s=new Set();for(const x of snapIdx) for(const k of x.imgs) s.add(k);return s};
@@ -886,11 +920,28 @@ $("#btn-import").addEventListener("click",()=>{$("#menu-backup").hidden=true;
 $("#notice-ok").addEventListener("click",()=>{$("#notice").hidden=true;meta.noticeSeen=true;Store.set("meta",meta)});
 
 /* ---------- start ---------- */
+/* the browser's database would not open: show the page, write nothing, ask for a fresh start */
+function storageDown(e){
+  console.error(e);meta={};book=newBook();loadFailed=true;failedId="";renderAll();
+  status("瀏覽器的資料庫暫時打不開，這次不會儲存",true);
+  openDialog(`<h2 id="dlg-title">暫時打不開日記資料</h2>
+    <p>這次瀏覽器沒有讓工具讀取保存的日記。為了不覆蓋你的日記，這次<b>不會儲存</b>任何內容，原本的日記也不會被動到。</p>
+    <p>請關掉這個分頁再重新打開；如果還是這樣，請把瀏覽器完全關閉後再開。</p>
+    <div class="row"><button type="button" class="btn quiet" data-act="ok">先看看</button><button type="button" class="btn solid" data-act="re">重新整理</button></div>`);
+  dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
+  dlg.querySelector('[data-act="re"]').onclick=()=>location.reload();
+}
 (async function start(){
-  meta=(await Store.get("meta"))||{};
+  let saved,id;
+  try{
+    if(await Store.ready()==="none") throw new Error("IndexedDB unavailable");
+    meta=(await Store.get("meta"))||{};
+    id=await Store.get("current");saved=id?await Store.get("book:"+id):null;
+  }catch(e){storageDown(e);return}
+  /* when this browser's diary space was first used: tells a new or cleared space from an old one */
+  if(!meta.since){meta.since=Date.now();meta.sinceVer=APP_VER;Store.set("meta",meta)}
   state.show=["them","me","both"].includes(meta.show)?meta.show:"both";
   if(state.show!=="both") panelWho=state.show;
-  const id=await Store.get("current");let saved=id?await Store.get("book:"+id):null;
   await loadSnaps();
   /* a new version of the page (or an older one still cached): keep a copy of the diary as it was, before anything is written */
   if(saved){if(meta.ver!==APP_VER||saved.appVer!==APP_VER) await keepCopy(meta.ver&&meta.ver!==APP_VER?`更新前（${meta.ver} 版）`:"更新前",id);
@@ -905,16 +956,23 @@ $("#notice-ok").addEventListener("click",()=>{$("#notice").hidden=true;meta.noti
   if(loadFailed){status("上次的日記沒有讀取成功，已暫停自動儲存",true);setTimeout(()=>recoverBooks(true),600);return}
   if(!saved){
     /* nothing marked as current, but older diaries may still be in this browser: offer them before starting fresh */
-    const others=(await Store.keys()).filter(k=>k.startsWith("book:"));
+    const others=[...(await Store.keys()),...Store.legacy.keys()].filter(k=>k.startsWith("book:"));
     if(others.length){setTimeout(()=>recoverBooks(false,true),900);status("找到之前的日記本");return}
     await save();
   } else status("已載入上次的內容");
+  /* ask the browser to keep this site's storage when the device runs low on space */
+  try{if(navigator.storage&&navigator.storage.persist&&!(await navigator.storage.persisted())) navigator.storage.persist().catch(()=>{})}catch(e){}
 })();
 
 /* ---------- 找回日記本: every diary this browser still keeps ---------- */
 async function recoverBooks(failed,found){
-  const ids=(await Store.keys()).filter(k=>k.startsWith("book:")).map(k=>k.slice(5));
+  let ids=[];try{ids=(await Store.keys()).filter(k=>k.startsWith("book:")).map(k=>k.slice(5))}catch(e){}
+  /* diaries an older version left in the browser's other storage place (localStorage) */
+  const lids=Store.legacy.keys().filter(k=>k.startsWith("book:")).map(k=>k.slice(5));
   const list=[];
+  for(const id of lids){const b=Store.legacy.get("book:"+id);if(!b||!Array.isArray(b.spreads)) continue;
+    list.push({id,legacy:true,name:(b.subtitle||"").trim()||"（沒有名稱）",n:b.spreads.length,
+      when:b.updated?new Date(b.updated):null,first:(b.spreads.find(x=>x&&x.them&&x.them.date)||{them:{}}).them.date||""})}
   for(const id of ids){try{const b=await Store.get("book:"+id);if(!b||!Array.isArray(b.spreads)) continue;
     list.push({id,name:(b.subtitle||"").trim()||"（沒有名稱）",n:b.spreads.length,
       when:b.updated?new Date(b.updated):null,first:(b.spreads.find(x=>x&&x.them&&x.them.date)||{them:{}}).them.date||""})}catch(e){}}
@@ -923,17 +981,32 @@ async function recoverBooks(failed,found){
   const lead=failed?"<p>上次的日記沒有讀取成功。為了保護你的資料，這次不會自動儲存，原本的內容也還在這台裝置上。</p>"
     :found?"<p>這個瀏覽器裡還有之前寫的日記本，要打開哪一本？</p>":"<p>這個瀏覽器裡保存的日記本都在這裡。打開其中一本，畫面上的日記本會換成它，其他的仍會保留。</p>";
   openDialog(`<h2 id="dlg-title">找回日記本</h2>${lead}
-    ${list.length?`<ul class="rb-list">${list.map(x=>`<li><div><b>${esc(x.name)}</b><small>${x.n} 個跨頁${x.first?"・從 "+esc(x.first):""}${x.when?"・最後修改 "+fmt(x.when):""}${x.id===book.id&&!failed?"・目前打開中":""}</small></div>
-      <button type="button" class="btn${x.id===book.id&&!failed?" quiet":" solid"}" data-open="${esc(x.id)}"${x.id===book.id&&!failed?" disabled":""}>打開</button></li>`).join("")}</ul>`
+    ${list.length?`<ul class="rb-list">${list.map(x=>`<li><div><b>${esc(x.name)}</b><small>${x.n} 個跨頁${x.first?"・從 "+esc(x.first):""}${x.when?"・最後修改 "+fmt(x.when):""}${x.legacy?"・存在瀏覽器的另一個位置":x.id===book.id&&!failed?"・目前打開中":""}</small></div>
+      ${x.legacy?`<button type="button" class="btn solid" data-legacy="${esc(x.id)}">打開</button>`
+        :`<button type="button" class="btn${x.id===book.id&&!failed?" quiet":" solid"}" data-open="${esc(x.id)}"${x.id===book.id&&!failed?" disabled":""}>打開</button>`}</li>`).join("")}</ul>`
       :"<p>這個瀏覽器裡沒有其他日記本。如果你是在別的瀏覽器或從主畫面寫的，請到那裡打開。</p>"}
     ${snapIdx.length?`<h3 class="rb-h">自動保存的副本</h3><p class="rb-note">每次網頁更新、每天第一次打開，以及刪除跨頁、匯入、還原之前，都會自動留一份。還原時，現在的內容也會先留一份副本。</p>
       <ul class="rb-list">${[...snapIdx].sort((a,b)=>b.t-a.t).map(x=>`<li><div><b>${esc(x.name||"（沒有名稱）")}</b><small>${fmt(new Date(x.t))}・${esc(x.why)}・${x.n} 個跨頁</small></div>
       <button type="button" class="btn quiet" data-snap="${esc(x.k)}">還原</button></li>`).join("")}</ul>`:""}
+    <details class="rb-diag"><summary>檢查資訊</summary><p id="rb-diag">讀取中…</p>
+      <p class="rb-note">只有儲存狀態（日記本數量、時間、版本），沒有日記內容。遇到問題時可以複製給開發者。</p>
+      <button type="button" class="btn quiet" data-act="diag">複製檢查資訊</button></details>
     <div class="row">${found?'<button type="button" class="btn quiet" data-act="new">開一本新的</button>':""}<button type="button" class="btn quiet" data-act="ok">關閉</button></div>`);
   dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
+  diagReport().then(r=>{const p=$("#rb-diag");if(!p) return;
+    p.textContent=`這個瀏覽器的日記空間從 ${r.since} 開始使用・開啟方式：${r.how}・日記本 ${r.books.length} 本${r.legacy.books.length?`（另一個位置還有 ${r.legacy.books.length} 本）`:""}・副本 ${r.copies.length} 份・已使用 ${r.usage||"不明"}・長期保存：${r.persisted}`;
+    dlg.querySelector('[data-act="diag"]').onclick=async e=>{const t=JSON.stringify(r,null,1);
+      try{await navigator.clipboard.writeText(t);e.target.textContent="已複製"}catch(err){p.textContent=t;e.target.textContent="請手動複製上面的文字"}}});
   const nw=dlg.querySelector('[data-act="new"]');if(nw) nw.onclick=async()=>{closeDialog(true);await save()};
   const go=async id=>{if(!loadFailed){clearTimeout(saveTimer);await save()}leaving=true;await saving;await Store.set("current",id);location.reload()};
   dlg.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go(b.dataset.open));
+  /* bring a diary over from localStorage: copy its record and pictures, never delete the original */
+  dlg.querySelectorAll("[data-legacy]").forEach(b=>b.onclick=async()=>{
+    const lid=b.dataset.legacy,rec=Store.legacy.get("book:"+lid);if(!rec) return;
+    let nid=lid;try{if(await Store.get("book:"+lid)) nid=lid+"-r"+Date.now().toString(36)}catch(e){toast("現在無法寫入，請重新整理後再試");return}
+    for(const k of recImgs(rec)){const v=Store.legacy.get(k);if(typeof v==="string"&&!await Store.set(k,v)){toast("裝置空間不足，無法搬過來");return}}
+    if(!await Store.set("book:"+nid,{...rec,id:nid})){toast("裝置空間不足，無法搬過來");return}
+    go(nid)});
   dlg.querySelectorAll("[data-snap]").forEach(b=>b.onclick=async()=>{
     const x=snapIdx.find(s=>s.k===b.dataset.snap);if(!x) return;
     if(!await confirmBox("還原這份副本？",`日記本會回到 ${fmt(new Date(x.t))} 的樣子。現在的內容會先另存一份副本，之後想改回來也可以。`,"還原")) return;
@@ -943,4 +1016,21 @@ async function recoverBooks(failed,found){
     if(!await Store.set("book:"+x.book,data)){leaving=false;toast("裝置空間不足，無法還原");return}
     await Store.set("current",x.book);location.reload()});
 }
+/* storage facts only — never diary text — so a lost diary can be traced */
+async function diagReport(){
+  const f=t=>t?fmt2(new Date(t)):"",ua=navigator.userAgent;
+  const how=(matchMedia("(display-mode: standalone)").matches||navigator.standalone===true)?"主畫面":
+    /CriOS/.test(ua)?"Chrome（iPhone）":/FxiOS/.test(ua)?"Firefox（iPhone）":/EdgiOS/.test(ua)?"Edge（iPhone）":
+    /iPhone|iPad/.test(ua)&&!/Safari\//.test(ua)?"App 內建瀏覽器":/iPhone|iPad/.test(ua)?"Safari":
+    /Edg\//.test(ua)?"Edge":/Chrome\//.test(ua)?"Chrome":/Firefox\//.test(ua)?"Firefox":/Safari\//.test(ua)?"Safari":"其他";
+  let keys=[];try{keys=await Store.keys()}catch(e){}
+  const books=[];for(const k of keys.filter(k=>k.startsWith("book:"))){try{const b=await Store.get(k);books.push({id:k.slice(5),n:b&&Array.isArray(b.spreads)?b.spreads.length:-1,updated:f(b&&b.updated),created:f(b&&b.created),ver:b&&b.appVer||""})}catch(e){books.push({id:k.slice(5),err:String(e)})}}
+  let persisted="不明",est="";try{persisted=(await navigator.storage.persisted())?"已開啟":"未開啟";const q=await navigator.storage.estimate();est=`${(q.usage/1048576).toFixed(1)} MB / ${(q.quota/1048576).toFixed(0)} MB`}catch(e){}
+  return {app:APP_VER,at:f(Date.now()),site:location.origin+location.pathname,how,ua:ua.slice(0,160),since:f(meta.since)||"不明",sinceVer:meta.sinceVer||"",lastVer:meta.ver||"",
+    noticeSeen:!!meta.noticeSeen,current:await Store.get("current").catch(()=>"?")||"",store:Store.mode,
+    legacy:{keys:Store.legacy.keys().length,books:Store.legacy.keys().filter(k=>k.startsWith("book:")).map(k=>{const b=Store.legacy.get(k);return {id:k.slice(5),n:b&&b.spreads?b.spreads.length:-1,updated:f(b&&b.updated)}})},open:book&&book.id,loadFailed,storeErrors:Store.errs,persisted,usage:est,
+    keys:{total:keys.length,book:books.length,img:keys.filter(k=>k.startsWith("img:")).length,snap:keys.filter(k=>k.startsWith("snap:")).length,font:keys.filter(k=>k.startsWith("font:")).length},
+    books,copies:snapIdx.map(x=>({book:x.book,t:f(x.t),why:x.why,n:x.n}))};
+}
+const fmt2=d=>`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 $("#btn-recover").addEventListener("click",()=>{$("#menu-backup").hidden=true;recoverBooks(false)});
