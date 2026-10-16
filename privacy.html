@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>隱私權說明｜Exchange Diary</title>
+<meta name="description" content="Exchange Diary 交換日記的隱私權說明：日記存在你的裝置裡；開啟雲端備份時，存在你自己的 Google 雲端硬碟。">
+<link rel="icon" href="icon-small.svg" type="image/svg+xml">
+<style>
+:root{--ink:#26241f;--muted:#6b675e;--line:#dcd8cf;--bg:#f6f5f1}
+@media (prefers-color-scheme:dark){:root{--ink:#ece9e2;--muted:#a9a59c;--line:#3a3833;--bg:#181816}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:48px 20px 80px}
+h1{font:600 30px/1.3 "Noto Serif TC",serif;margin:0 0 6px}
+.k{color:var(--muted);font-size:14px;margin:0 0 32px}
+h2{font-size:18px;margin:36px 0 8px;padding-top:18px;border-top:1px solid var(--line)}
+p,li{margin:8px 0}
+ul{padding-left:1.3em}
+.box{border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:18px 0}
+a{color:inherit}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>隱私權說明</h1>
+<p class="k">Exchange Diary 交換日記・生效日期 2026 年 10 月 16 日</p>
+
+<div class="box">
+<p><b>一句話說明：</b>你的日記只存在你自己的裝置裡；如果你開啟雲端備份，會再多存一份到<b>你自己的</b> Google 雲端硬碟。我們沒有伺服器，看不到你的日記，也不會取得你的 Email 或任何帳號資料。</p>
+</div>
+
+<h2>1. 我們不收集什麼</h2>
+<ul>
+<li>我們沒有自己的伺服器或資料庫，不會收到、也不會保存你的日記、照片、字體或設定。</li>
+<li>使用這個工具不需要註冊帳號。</li>
+<li>我們不使用廣告、追蹤碼或分析工具，不會記錄你的使用行為。</li>
+</ul>
+
+<h2>2. 日記存在哪裡</h2>
+<ul>
+<li><b>你的裝置：</b>日記、照片、上傳的字體和設定，都存在你使用的這個瀏覽器裡（IndexedDB 與 localStorage）。清除瀏覽器資料、換裝置或換瀏覽器時，這些資料可能會消失。</li>
+<li><b>備份檔：</b>你按「匯出備份檔」時，會產生一個檔案存到你選擇的位置，由你自己保管。</li>
+<li><b>Google 雲端硬碟（選用）：</b>只有你自己開啟「雲端備份」時才會使用，詳見下一節。</li>
+</ul>
+
+<h2>3. 雲端備份與 Google 帳號</h2>
+<p>開啟雲端備份時，會跳出 Google 自己的登入與授權畫面。你的帳號密碼只會輸入給 Google，我們看不到。</p>
+<p>這個工具向 Google 申請的權限只有一項：<b>「查看及管理這個應用程式自己在 Google 雲端硬碟中的設定資料」</b>（drive.appdata）。這代表：</p>
+<ul>
+<li>日記會存在你雲端硬碟裡一個專屬的隱藏資料夾，只有這個工具能讀寫。</li>
+<li>這個工具<b>無法</b>看到或修改你雲端硬碟裡的其他檔案，也無法讀取你的 Gmail、Google 相簿或聯絡人。</li>
+<li>這個工具<b>不會</b>要求你的 Email、姓名或大頭貼。</li>
+<li>存取 Google 的過程只發生在你的瀏覽器和 Google 之間，不經過我們。Google 給的通行權限只存在你的瀏覽器裡，大約一小時後失效。</li>
+<li>上傳到雲端的內容包括日記文字、照片，以及最近幾份舊版本；你上傳的字體不會備份。</li>
+</ul>
+<p>這些資料由 Google 依照 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google 隱私權政策</a> 保管。本工具對 Google 使用者資料的使用，遵守 <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>，包括其中的「Limited Use」限制：資料只用來提供備份與還原功能，不會轉移給任何人，也不會用於廣告或其他用途。</p>
+
+<h2>4. 停止使用與刪除</h2>
+<ul>
+<li>在工具裡按「備份 → 雲端備份 → 取消連結」，就會停止備份；勾選「同時刪除雲端上的日記」，會刪除雲端資料夾裡的所有內容。</li>
+<li>也可以到 <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener">Google 帳號的「第三方應用程式與服務」</a> 移除這個工具的存取權。</li>
+<li>瀏覽器裡的資料，可以用瀏覽器的「清除網站資料」刪除。</li>
+</ul>
+
+<h2>5. 網站服務</h2>
+<p>這個網站放在 GitHub Pages 上，網頁字體由 Google Fonts 提供。和所有網站一樣，GitHub 與 Google Fonts 可能會依其政策記錄一般的連線資訊（例如 IP 位址），但不會接觸到你的日記內容。</p>
+
+<h2>6. 說明的更新</h2>
+<p>如果這份說明有修改，會更新在這個頁面並修改上方的生效日期。</p>
+
+<h2>7. 聯絡我們</h2>
+<p>有任何問題，請寫信到：<b id="contact">（聯絡信箱設定中）</b></p>
+
+<footer><a href="./">← 回到交換日記</a></footer>
+</main>
+</body>
+</html>

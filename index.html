@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gfonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Quicksand:wght@300;500;600&family=Jost:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,500&family=Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Cactus+Classical+Serif&family=Iansui&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="styles.css?v=2026.10.16d">
-<link rel="stylesheet" href="app.css?v=2026.10.16d">
+<link rel="stylesheet" href="styles.css?v=2026.10.16g">
+<link rel="stylesheet" href="app.css?v=2026.10.16g">
 <script>if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </head>
 <body>
@@ -160,13 +160,16 @@
             </div></div>
           <div class="menu-wrap"><button type="button" class="btn" id="btn-backup" aria-haspopup="true" aria-expanded="false">備份</button>
             <div class="menu" id="menu-backup" hidden>
-              <button type="button" id="btn-export">匯出備份檔</button>
+              <div class="mh" aria-hidden="true">備份到別處</div>
+              <button type="button" id="btn-export">匯出備份檔<small>存成檔案</small></button>
+              <button type="button" id="btn-cloud" hidden><span><svg class="cl-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.4 9.2 4.5 4.5 0 0 0 7 18z"/></svg>雲端備份</span><small>Google</small></button>
+              <div class="mh" aria-hidden="true">找回</div>
               <button type="button" id="btn-import">匯入備份檔</button>
-              <button type="button" id="btn-recover">找回日記本</button>
+              <button type="button" id="btn-recover">找回日記本<small>歷史版本</small></button>
             </div></div>
         </div>
         <p class="status" id="spread-when"></p>
-        <p class="status" id="save-status" role="status" aria-live="polite"></p>
+        <p class="status" id="save-status"><span id="save-txt" role="status" aria-live="polite"></span><span id="cloud-st"></span></p>
       </div>
     </aside>
   </div>
@@ -202,16 +205,17 @@
 <div class="toast" id="toast" role="status" hidden><span></span><button type="button" id="toast-undo">復原</button></div>
 <div class="modal" id="modal" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title"></div></div>
 
-<script src="themes.js?v=2026.10.16d"></script>
-<script src="parse.js?v=2026.10.16d"></script>
-<script src="app.js?v=2026.10.16d"></script>
-<script src="objects.js?v=2026.10.16d"></script>
-<script src="views.js?v=2026.10.16d"></script>
-<script src="export.js?v=2026.10.16d"></script>
-<script src="print.js?v=2026.10.16d"></script>
-<script src="mobile.js?v=2026.10.16d"></script>
-<script src="search.js?v=2026.10.16d"></script>
-<script src="guide.js?v=2026.10.16d"></script>
+<script src="themes.js?v=2026.10.16g"></script>
+<script src="parse.js?v=2026.10.16g"></script>
+<script src="app.js?v=2026.10.16g"></script>
+<script src="objects.js?v=2026.10.16g"></script>
+<script src="views.js?v=2026.10.16g"></script>
+<script src="export.js?v=2026.10.16g"></script>
+<script src="print.js?v=2026.10.16g"></script>
+<script src="mobile.js?v=2026.10.16g"></script>
+<script src="search.js?v=2026.10.16g"></script>
+<script src="cloud.js?v=2026.10.16g"></script>
+<script src="guide.js?v=2026.10.16g"></script>
 
 </body>
 </html>

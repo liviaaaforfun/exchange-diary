@@ -17,16 +17,21 @@ document.documentElement.lang="zh-Hant-TW";
    One place per browser, decided once when the page opens: IndexedDB. Earlier versions quietly switched to localStorage
    whenever IndexedDB hiccuped, which could split a diary between two places and show an empty book. Now:
    · IndexedDB opens (with retries) → it is the only place used; a failed step is retried on a fresh connection, never sent elsewhere
-   · IndexedDB is missing altogether, or this browser's diary already lives in localStorage → localStorage
-   · IndexedDB fails to open → "none": nothing is written, the page asks for a reload */
+   · IndexedDB is missing altogether → localStorage
+   · IndexedDB is there but fails to open → "none": nothing is read from or written anywhere else, the page keeps retrying
+     and reloads itself once the database opens (it must never show whatever an older version left in localStorage) */
 const Store=(()=>{
-  const DBN="exchange-diary",ST="kv",LP=DBN+":";let dbp=null,mode="";
-  const errs=[];const note=e=>{if(errs.length<8) errs.push(String(e&&e.name||e)+": "+String(e&&e.message||"").slice(0,90))};
+  const DBN="exchange-diary",ST="kv",LP=DBN+":";let dbp=null,mode="",cur=null;
+  /* let go of the database when the page goes away, so the next page (a reload, a new version) can open it straight away */
+  addEventListener("pagehide",()=>{try{cur&&cur.close()}catch(e){}cur=null;dbp=null});
+  /* a small trace of storage trouble, kept outside the diary so it can be read even when the database will not open */
+  const trace=e=>{try{const a=JSON.parse(localStorage.getItem("ed-trace")||"[]");a.push([Date.now(),String(e&&e.name||e)+": "+String(e&&e.message||"").slice(0,90)]);localStorage.setItem("ed-trace",JSON.stringify(a.slice(-10)))}catch(x){}};
+  const errs=[];const note=e=>{trace(e);if(errs.length<8) errs.push(String(e&&e.name||e)+": "+String(e&&e.message||"").slice(0,90))};
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const openOnce=()=>new Promise((res,rej)=>{let r;try{r=indexedDB.open(DBN,1)}catch(e){rej(e);return}
     const t=setTimeout(()=>rej(new Error("open timed out")),8000);
     r.onupgradeneeded=()=>r.result.createObjectStore(ST);
-    r.onsuccess=()=>{clearTimeout(t);const db=r.result;db.onversionchange=()=>{db.close();dbp=null};db.onclose=()=>{dbp=null};res(db)};
+    r.onsuccess=()=>{clearTimeout(t);const db=r.result;db.onversionchange=()=>{db.close();dbp=null};db.onclose=()=>{dbp=null};cur=db;res(db)};
     r.onerror=()=>{clearTimeout(t);rej(r.error)};r.onblocked=()=>note(new Error("open blocked"))});
   async function openDB(){
     if(dbp) return dbp;
@@ -39,7 +44,9 @@ const Store=(()=>{
     if(mode) return mode;
     if(typeof indexedDB==="undefined"||!indexedDB){mode="local";return mode}
     try{await openDB();mode="idb"}
-    catch(e){mode=lsKeys().includes("current")?"local":"none"}
+    catch(e){mode="none";
+      /* keep trying quietly; the moment the database opens, start over with the real diary */
+      (async()=>{for(let i=0;i<40;i++){await wait(1500);try{await openOnce();location.reload();return}catch(x){}}})()}
     return mode;
   }
   /* one IndexedDB step; if the connection was lost (it happens on phones after the app was in the background), reopen and try once more */
@@ -67,7 +74,8 @@ const Store=(()=>{
     return (await run("readonly",st=>st.getAllKeys())).map(String)}
   /* what an older version may have left in localStorage while this browser uses IndexedDB */
   const legacy={keys:()=>mode==="idb"?lsKeys():[],get:lsGet};
-  return {ready,get,set,del,keys,legacy,errs,get mode(){return mode}};
+  const traces=()=>{try{return JSON.parse(localStorage.getItem("ed-trace")||"[]")}catch(e){return []}};
+  return {ready,get,set,del,keys,legacy,errs,traces,get mode(){return mode}};
 })();
 
 /* ---------- book model ---------- */
@@ -563,7 +571,7 @@ window.addEventListener("resize",scheduleFit);
 
 /* ---------- saving ---------- */
 let saveTimer=0;
-const status=(t,warn)=>{const s=$("#save-status");s.textContent=t;s.classList.toggle("warn",!!warn)};
+const status=(t,warn)=>{const s=$("#save-txt")||$("#save-status");s.textContent=t;s.classList.toggle("warn",!!warn)};
 function touch(){book.updated=Date.now();status("儲存中…");clearTimeout(saveTimer);saveTimer=setTimeout(save,500)}
 /* closing the tab right after a change should not lose it */
 addEventListener("pagehide",()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=0;save()}});
@@ -597,14 +605,28 @@ async function saveNow(){
   for(const [k,v] of news){if(await Store.set(k,v)) savedImgs.add(k);else{ok=false;break}}
   ok=ok&&await Store.set("book:"+book.id,data)&&await Store.set("current",book.id);
   if(ok){const keep=snapImgs();for(const k of [...savedImgs]) if(!used.has(k)){savedImgs.delete(k);if(!keep.has(k)) Store.del(k)}}
+  if(ok) writeMirror(data);
+  if(ok&&typeof Cloud!=="undefined"){Cloud.changed();Cloud.maybeNudge()}
   if(ok&&Date.now()-lastSnap(book.id)>SNAP_EVERY) queueSnap("自動保存");
   const t=new Date();status(ok?`已自動儲存 ${pad(t.getHours())}:${pad(t.getMinutes())}`:"裝置空間不足，無法自動儲存，請先匯出備份",!ok);
   return ok;
 }
 
+/* ---------- 備用副本: the diary's text written a second time into localStorage, a separate part of the browser.
+   Chrome has been seen to empty a site's IndexedDB while leaving localStorage alone; this lets the words come back.
+   Text only (photos stay as img: keys); one entry per diary, the three most recent kept. ---------- */
+const MIR="ed-mirror:";
+function writeMirror(data){
+  try{const s=JSON.stringify({id:data.id,t:Date.now(),v:APP_VER,data});if(s.length>2.4e6) return;
+    localStorage.setItem(MIR+data.id,s);
+    const all=mirrors();if(all.length>3) for(const m of all.slice(3)) localStorage.removeItem(MIR+m.id)}catch(e){}
+}
+function mirrors(){const out=[];try{for(const k of Object.keys(localStorage)) if(k.startsWith(MIR)){try{const m=JSON.parse(localStorage.getItem(k));
+  if(m&&m.data&&Array.isArray(m.data.spreads)&&m.id) out.push(m)}catch(e){}}}catch(e){}return out.sort((a,b)=>b.t-a.t)}
+
 /* ---------- 自動副本: earlier copies of the diary kept in this browser, so an update or a slip never loses it.
    A copy is the stored record (text only, photos stay under their img: keys and are kept while any copy uses them). ---------- */
-const APP_VER="2026.10.16d";
+const APP_VER="2026.10.16g";
 const SNAP_PER_BOOK=12,SNAP_TOTAL=40,SNAP_EVERY=12*3600e3;
 let snapIdx=[];   // [{k,book,t,why,n,name,sig,imgs}]
 const snapImgs=()=>{const s=new Set();for(const x of snapIdx) for(const k of x.imgs) s.add(k);return s};
@@ -627,6 +649,7 @@ async function keepCopy(why,id){
     for(const x of all){per[x.book]=(per[x.book]||0)+1;(per[x.book]<=SNAP_PER_BOOK&&keep.length<SNAP_TOTAL?keep:drop).push(x)}
     if(!await Store.set("snaps",keep)){Store.del(k);return false}
     snapIdx=keep;
+    if(typeof Cloud!=="undefined") Cloud.noteVersion(why);
     if(drop.length){
       /* photos of a dropped copy go only when nothing else uses them: the open diary, another copy, or another diary in this browser */
       const used=new Set([...savedImgs,...snapImgs()]);
@@ -798,7 +821,13 @@ $("#btn-revert").addEventListener("click",async()=>{
   await guard("還原修改前");
   s.them=s.before.them;s.me=s.before.me;s.objs=s.before.objs||[];delete s.before;s.state="done";renderSpread();touch();
 });
-function toggleMenu(btn,menu,open){menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));if(open){const f=menu.querySelector("button:not(:disabled)");f&&f.focus()}}
+function toggleMenu(btn,menu,open){menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));
+  /* inside the phone's scrolling sheet the menu would be cut off: lift it out above the button */
+  menu.style.cssText="";
+  if(open&&getComputedStyle(menu.closest(".panel")||document.body).overflowY!=="visible"&&menu.closest(".panel")){
+    const r=btn.getBoundingClientRect(),w=Math.max(r.width,200);
+    menu.style.cssText=`position:fixed;bottom:${innerHeight-r.top+6}px;top:auto;left:${Math.max(8,Math.min(r.right-w,innerWidth-w-8))}px;right:auto;width:${w}px;max-height:${r.top-16}px;overflow:auto`}
+  if(open){const f=menu.querySelector("button:not(:disabled)");f&&f.focus()}}
 for(const [b,m] of [["#btn-output","#menu-output"],["#btn-backup","#menu-backup"]]){
   const btn=$(b),menu=$(m);
   btn.addEventListener("click",e=>{e.stopPropagation();const open=menu.hidden;document.querySelectorAll(".menu").forEach(x=>{x.hidden=true});document.querySelectorAll("[aria-haspopup]").forEach(x=>x.setAttribute("aria-expanded","false"));toggleMenu(btn,menu,open)});
@@ -866,7 +895,7 @@ $("#btn-paste").addEventListener("click",()=>{if(book.spreads[cur].state==="done
 
 /* export */
 function fileName(){const t=new Date();return `${diaryName().replace(/[\\/:*?"<>|]+/g,"").trim()||"Exchange Diary"}-${t.getFullYear()}${pad(t.getMonth()+1)}${pad(t.getDate())}.diary`}
-$("#btn-export").addEventListener("click",()=>{$("#menu-backup").hidden=true;
+$("#btn-export").addEventListener("click",()=>{$("#menu-backup").hidden=true;meta.exported=Date.now();Store.set("meta",meta);
   const json=JSON.stringify(book,null,1),name=fileName(),small=json.length<1.5e6,mb=(json.length/1048576).toFixed(1);
   try{const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}catch(e){}
   /* where downloads are blocked (some app previews, some phones) there are two more ways out:
@@ -925,8 +954,8 @@ function storageDown(e){
   console.error(e);meta={};book=newBook();loadFailed=true;failedId="";renderAll();
   status("瀏覽器的資料庫暫時打不開，這次不會儲存",true);
   openDialog(`<h2 id="dlg-title">暫時打不開日記資料</h2>
-    <p>這次瀏覽器沒有讓工具讀取保存的日記。為了不覆蓋你的日記，這次<b>不會儲存</b>任何內容，原本的日記也不會被動到。</p>
-    <p>請關掉這個分頁再重新打開；如果還是這樣，請把瀏覽器完全關閉後再開。</p>
+    <p>這次瀏覽器還沒讓工具讀取保存的日記。為了不覆蓋你的日記，這次<b>不會儲存</b>任何內容，原本的日記也不會被動到。</p>
+    <p>工具會在背景繼續嘗試，一打開就自動重新載入。如果一分鐘後還是這樣，請關掉這個分頁再重新打開，或把瀏覽器完全關閉後再開。</p>
     <div class="row"><button type="button" class="btn quiet" data-act="ok">先看看</button><button type="button" class="btn solid" data-act="re">重新整理</button></div>`);
   dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
   dlg.querySelector('[data-act="re"]').onclick=()=>location.reload();
@@ -938,8 +967,14 @@ function storageDown(e){
     meta=(await Store.get("meta"))||{};
     id=await Store.get("current");saved=id?await Store.get("book:"+id):null;
   }catch(e){storageDown(e);return}
+  /* the database came back empty but the backup text is here: put the diary back before anything else is written */
+  let fromMirror=null;
+  if(!saved){try{const have=new Set((await Store.keys()).filter(k=>k.startsWith("book:")).map(k=>k.slice(5)));
+    const m=mirrors().filter(x=>!have.has(x.id)).sort((a,b)=>b.data.spreads.length-a.data.spreads.length||b.t-a.t)[0];
+    if(m&&await Store.set("book:"+m.id,m.data)&&await Store.set("current",m.id)){saved=m.data;id=m.id;fromMirror=m}}catch(e){console.error(e)}}
   /* when this browser's diary space was first used: tells a new or cleared space from an old one */
   if(!meta.since){meta.since=Date.now();meta.sinceVer=APP_VER;Store.set("meta",meta)}
+  if(fromMirror){meta.noticeSeen=true;meta.tourSeen=true;meta.mirrorRestored=Date.now();Store.set("meta",meta)}
   state.show=["them","me","both"].includes(meta.show)?meta.show:"both";
   if(state.show!=="both") panelWho=state.show;
   await loadSnaps();
@@ -952,6 +987,7 @@ function storageDown(e){
   {const miss=[book.fonts.them,book.fonts.me].filter(id=>isUserFont(id)&&!userFonts.some(f=>f.id===id));
    if(miss.length) setTimeout(()=>toast(`這本日記用了「${miss.map(id=>book.fontNames[id]||"自訂字體").join("、")}」，這台裝置還沒有，請在字體選單重新上傳。`),800)}
   renderAll();
+  if(!loadFailed&&typeof Cloud!=="undefined") Cloud.start();
   if(!meta.noticeSeen&&typeof firstRun==="function") setTimeout(firstRun,400);
   if(loadFailed){status("上次的日記沒有讀取成功，已暫停自動儲存",true);setTimeout(()=>recoverBooks(true),600);return}
   if(!saved){
@@ -959,7 +995,16 @@ function storageDown(e){
     const others=[...(await Store.keys()),...Store.legacy.keys()].filter(k=>k.startsWith("book:"));
     if(others.length){setTimeout(()=>recoverBooks(false,true),900);status("找到之前的日記本");return}
     await save();
-  } else status("已載入上次的內容");
+  } else {status("已載入上次的內容");writeMirror(saved)}
+  if(fromMirror){const lost=book.spreads.reduce((n,s)=>n+(s.objs||[]).filter(o=>o.type==="photo"&&!o.src).length,0);
+    setTimeout(()=>{openDialog(`<h2 id="dlg-title">日記救回來了</h2>
+      <p>這次打開時，瀏覽器把這個網站的資料清掉了（電腦或手機空間不足時，瀏覽器有時會這樣做）。</p>
+      <p>還好工具有另外多留一份文字，「${esc((book.subtitle||"").trim()||"日記")}」的 <b>${book.spreads.length} 個跨頁文字都救回來了</b>。</p>
+      <ul class="dc-box">${lost?`<li>${lost} 張照片沒辦法一起救回：照片框和說明文字都還在，點一下照片框就能重新放上</li>`:""}<li>上傳的字體需要重新上傳</li></ul>
+      <p class="rb-note">為了不再發生，建議現在就把日記「備份到別處」。</p>
+      <div class="row"><button type="button" class="btn quiet" data-act="ok">知道了</button><button type="button" class="btn solid" data-act="exp">匯出備份檔</button></div>`);
+      dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(true);
+      dlg.querySelector('[data-act="exp"]').onclick=()=>{closeDialog(true);setTimeout(()=>$("#btn-export").click(),150)}},700)}
   /* ask the browser to keep this site's storage when the device runs low on space */
   try{if(navigator.storage&&navigator.storage.persist&&!(await navigator.storage.persisted())) navigator.storage.persist().catch(()=>{})}catch(e){}
 })();
@@ -979,24 +1024,34 @@ async function recoverBooks(failed,found){
   list.sort((a,b)=>(b.when||0)-(a.when||0));
   const fmt=d=>d?`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`:"";
   const lead=failed?"<p>上次的日記沒有讀取成功。為了保護你的資料，這次不會自動儲存，原本的內容也還在這台裝置上。</p>"
-    :found?"<p>這個瀏覽器裡還有之前寫的日記本，要打開哪一本？</p>":"<p>這個瀏覽器裡保存的日記本都在這裡。打開其中一本，畫面上的日記本會換成它，其他的仍會保留。</p>";
+    :found?"<p>這個瀏覽器裡還有之前寫的日記本，要打開哪一本？</p>":`<p>改錯、刪錯，或日記不見了，都可以在這裡找回來。<button type="button" class="link" data-act="how">日記怎麼保存？</button></p>`;
+  const tagOf=src=>src==="cloud"?`<span class="vtag cloud">☁ 雲端</span>`:`<span class="vtag">這台</span>`;
+  const whyOf=w=>!w?"":/^更新前/.test(w)?"網頁更新前":w;
+  const vrow=v=>`<li><div><b>${fmt(new Date(v.t))}${tagOf(v.src)}</b><small>${[v.book!==book.id?esc(v.name||"（沒有名稱）"):"",whyOf(v.why),v.n+" 個跨頁"].filter(Boolean).map(x=>x).join("・")}</small></div>
+      <button type="button" class="btn quiet" ${v.src==="cloud"?`data-cver="${esc(v.f)}" data-book="${esc(v.book)}"`:`data-snap="${esc(v.k)}"`}>還原</button></li>`;
+  const local=[...snapIdx].map(x=>({...x,src:"here"}));
+  const cloudOn=typeof Cloud!=="undefined"&&Cloud.on();
   openDialog(`<h2 id="dlg-title">找回日記本</h2>${lead}
+    <h3 class="rb-h">你的日記本</h3>
     ${list.length?`<ul class="rb-list">${list.map(x=>`<li><div><b>${esc(x.name)}</b><small>${x.n} 個跨頁${x.first?"・從 "+esc(x.first):""}${x.when?"・最後修改 "+fmt(x.when):""}${x.legacy?"・存在瀏覽器的另一個位置":x.id===book.id&&!failed?"・目前打開中":""}</small></div>
       ${x.legacy?`<button type="button" class="btn solid" data-legacy="${esc(x.id)}">打開</button>`
         :`<button type="button" class="btn${x.id===book.id&&!failed?" quiet":" solid"}" data-open="${esc(x.id)}"${x.id===book.id&&!failed?" disabled":""}>打開</button>`}</li>`).join("")}</ul>`
       :"<p>這個瀏覽器裡沒有其他日記本。如果你是在別的瀏覽器或從主畫面寫的，請到那裡打開。</p>"}
-    ${snapIdx.length?`<h3 class="rb-h">自動保存的副本</h3><p class="rb-note">每次網頁更新、每天第一次打開，以及刪除跨頁、匯入、還原之前，都會自動留一份。還原時，現在的內容也會先留一份副本。</p>
-      <ul class="rb-list">${[...snapIdx].sort((a,b)=>b.t-a.t).map(x=>`<li><div><b>${esc(x.name||"（沒有名稱）")}</b><small>${fmt(new Date(x.t))}・${esc(x.why)}・${x.n} 個跨頁</small></div>
-      <button type="button" class="btn quiet" data-snap="${esc(x.k)}">還原</button></li>`).join("")}</ul>`:""}
-    <details class="rb-diag"><summary>檢查資訊</summary><p id="rb-diag">讀取中…</p>
-      <p class="rb-note">只有儲存狀態（日記本數量、時間、版本），沒有日記內容。遇到問題時可以複製給開發者。</p>
-      <button type="button" class="btn quiet" data-act="diag">複製檢查資訊</button></details>
-    <div class="row">${found?'<button type="button" class="btn quiet" data-act="new">開一本新的</button>':""}<button type="button" class="btn quiet" data-act="ok">關閉</button></div>`);
+    <h3 class="rb-h">歷史版本<small>工具自動留的${cloudOn?"，這台和雲端各最多 12、10 份":"，最多 12 份"}</small></h3>
+    <ul class="rb-list" id="rb-vers">${local.length?local.sort((a,b)=>b.t-a.t).map(vrow).join(""):`<li class="rb-empty">還沒有歷史版本，寫一陣子之後就會有了。</li>`}</ul>
+    ${cloudOn?"":`<div class="rb-away"><b>想換手機、清資料也不怕？</b>這些歷史版本都在這個瀏覽器裡，瀏覽器資料被清掉時會一起不見。把日記備份到別處更保險：
+      <div class="row"><button type="button" class="btn quiet" data-act="exp">匯出備份檔</button>${typeof Cloud!=="undefined"&&Cloud.available?'<button type="button" class="btn quiet" data-act="cloud">開啟雲端備份</button>':""}</div></div>`}
+    <p class="rb-more">遇到問題？<button type="button" class="link" data-act="diag">複製檢查資訊</button>給開發者</p><p class="rb-note" id="rb-diag" hidden></p>
+    <div class="row">${found?'<button type="button" class="btn quiet" data-act="new">開一本新的</button>':""}<button type="button" class="btn solid" data-act="ok">關閉</button></div>`);
   dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(false);
-  diagReport().then(r=>{const p=$("#rb-diag");if(!p) return;
-    p.textContent=`這個瀏覽器的日記空間從 ${r.since} 開始使用・開啟方式：${r.how}・日記本 ${r.books.length} 本${r.legacy.books.length?`（另一個位置還有 ${r.legacy.books.length} 本）`:""}・副本 ${r.copies.length} 份・已使用 ${r.usage||"不明"}・長期保存：${r.persisted}`;
-    dlg.querySelector('[data-act="diag"]').onclick=async e=>{const t=JSON.stringify(r,null,1);
-      try{await navigator.clipboard.writeText(t);e.target.textContent="已複製"}catch(err){p.textContent=t;e.target.textContent="請手動複製上面的文字"}}});
+  {const h=dlg.querySelector('[data-act="how"]');if(h) h.onclick=()=>{closeDialog(false);setTimeout(()=>typeof savingHelp==="function"&&savingHelp(),120)}}
+  {const h=dlg.querySelector('[data-act="exp"]');if(h) h.onclick=()=>{closeDialog(false);setTimeout(()=>$("#btn-export").click(),120)}}
+  {const h=dlg.querySelector('[data-act="cloud"]');if(h) h.onclick=()=>{closeDialog(false);setTimeout(()=>Cloud.open(),120)}}
+  dlg.querySelector('[data-act="diag"]').onclick=async e=>{const r=await diagReport(),t=JSON.stringify(r,null,1),p=$("#rb-diag");
+    try{await navigator.clipboard.writeText(t);e.target.textContent="已複製"}catch(err){p.hidden=false;p.textContent=t;e.target.textContent="請手動複製下面的文字"}};
+  /* versions kept in the cloud join the same list, newest first */
+  if(cloudOn) Cloud.versions().then(cv=>{const ul=$("#rb-vers");if(!ul||!cv||!cv.length) return;
+    const all=[...local,...cv.map(v=>({...v,src:"cloud"}))].sort((a,b)=>b.t-a.t);ul.innerHTML=all.map(vrow).join("");bindVers()}).catch(()=>{});
   const nw=dlg.querySelector('[data-act="new"]');if(nw) nw.onclick=async()=>{closeDialog(true);await save()};
   const go=async id=>{if(!loadFailed){clearTimeout(saveTimer);await save()}leaving=true;await saving;await Store.set("current",id);location.reload()};
   dlg.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go(b.dataset.open));
@@ -1007,6 +1062,18 @@ async function recoverBooks(failed,found){
     for(const k of recImgs(rec)){const v=Store.legacy.get(k);if(typeof v==="string"&&!await Store.set(k,v)){toast("裝置空間不足，無法搬過來");return}}
     if(!await Store.set("book:"+nid,{...rec,id:nid})){toast("裝置空間不足，無法搬過來");return}
     go(nid)});
+  dlg.querySelectorAll("[data-mirror]").forEach(b=>b.onclick=async()=>{
+    const m=mirrors().find(x=>x.id===b.dataset.mirror);if(!m) return;
+    if(!await confirmBox("還原備用副本？",`日記本「${(m.data.subtitle||"").trim()||"（沒有名稱）"}」會回到 ${fmt(new Date(m.t))} 的文字內容。現在的內容會先另存一份副本。`,"還原")) return;
+    if(!loadFailed){clearTimeout(saveTimer);await save()}
+    await queueSnap("還原前",m.id);leaving=true;await saving;
+    if(!await Store.set("book:"+m.id,m.data)){leaving=false;toast("現在無法寫入，請重新整理後再試");return}
+    await Store.set("current",m.id);location.reload()});
+  bindVers();
+  function bindVers(){
+  dlg.querySelectorAll("[data-cver]").forEach(b=>b.onclick=async()=>{
+    if(!await confirmBox("還原雲端的版本？","日記本會回到雲端上這個版本的樣子（照片會一起下載）。現在的內容會先另存一份歷史版本。","還原")) return;
+    b.disabled=true;b.textContent="下載中…";try{await Cloud.restore(b.dataset.cver,b.dataset.book)}catch(e){b.disabled=false;b.textContent="還原";toast("現在沒辦法從雲端下載，請稍後再試")}});
   dlg.querySelectorAll("[data-snap]").forEach(b=>b.onclick=async()=>{
     const x=snapIdx.find(s=>s.k===b.dataset.snap);if(!x) return;
     if(!await confirmBox("還原這份副本？",`日記本會回到 ${fmt(new Date(x.t))} 的樣子。現在的內容會先另存一份副本，之後想改回來也可以。`,"還原")) return;
@@ -1015,6 +1082,7 @@ async function recoverBooks(failed,found){
     await queueSnap("還原前",x.book);leaving=true;await saving;
     if(!await Store.set("book:"+x.book,data)){leaving=false;toast("裝置空間不足，無法還原");return}
     await Store.set("current",x.book);location.reload()});
+  }
 }
 /* storage facts only — never diary text — so a lost diary can be traced */
 async function diagReport(){
@@ -1028,7 +1096,7 @@ async function diagReport(){
   let persisted="不明",est="";try{persisted=(await navigator.storage.persisted())?"已開啟":"未開啟";const q=await navigator.storage.estimate();est=`${(q.usage/1048576).toFixed(1)} MB / ${(q.quota/1048576).toFixed(0)} MB`}catch(e){}
   return {app:APP_VER,at:f(Date.now()),site:location.origin+location.pathname,how,ua:ua.slice(0,160),since:f(meta.since)||"不明",sinceVer:meta.sinceVer||"",lastVer:meta.ver||"",
     noticeSeen:!!meta.noticeSeen,current:await Store.get("current").catch(()=>"?")||"",store:Store.mode,
-    legacy:{keys:Store.legacy.keys().length,books:Store.legacy.keys().filter(k=>k.startsWith("book:")).map(k=>{const b=Store.legacy.get(k);return {id:k.slice(5),n:b&&b.spreads?b.spreads.length:-1,updated:f(b&&b.updated)}})},open:book&&book.id,loadFailed,storeErrors:Store.errs,persisted,usage:est,
+    legacy:{keys:Store.legacy.keys().length,books:Store.legacy.keys().filter(k=>k.startsWith("book:")).map(k=>{const b=Store.legacy.get(k);return {id:k.slice(5),n:b&&b.spreads?b.spreads.length:-1,updated:f(b&&b.updated)}})},open:book&&book.id,loadFailed,storeErrors:Store.errs,traces:Store.traces().map(([t,m])=>f(t)+" "+m),mirrors:mirrors().map(m=>({id:m.id,t:f(m.t),n:m.data.spreads.length})),mirrorRestored:f(meta.mirrorRestored),persisted,usage:est,
     keys:{total:keys.length,book:books.length,img:keys.filter(k=>k.startsWith("img:")).length,snap:keys.filter(k=>k.startsWith("snap:")).length,font:keys.filter(k=>k.startsWith("font:")).length},
     books,copies:snapIdx.map(x=>({book:x.book,t:f(x.t),why:x.why,n:x.n}))};
 }

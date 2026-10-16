@@ -625,3 +625,47 @@ body.zoomed .sr-bar{top:calc(env(safe-area-inset-top,0px) + 56px)}
 .rb-diag{margin-top:16px;font-size:12.5px;color:var(--muted)}
 .rb-diag summary{cursor:pointer}
 .rb-diag p{margin:8px 0;word-break:break-all;white-space:pre-wrap}
+/* backup menu groups, history list, saving help */
+.menu .mh{font-size:11px;letter-spacing:.12em;color:var(--muted);padding:9px 12px 3px;border-top:1px solid var(--line)}
+.menu .mh:first-child{border-top:0}
+.menu .mh + button{border-top:0}
+.menu button,.menu button span{white-space:nowrap}
+.cl-ic{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:.3em;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rb-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rb-h small{font-weight:400;font-size:12px;color:var(--muted)}
+.rb-list .btn{white-space:nowrap;flex:none}
+.rb-empty{color:var(--muted);font-size:13px;justify-content:flex-start!important}
+.vtag{display:inline-block;font-size:11px;line-height:1;padding:3px 6px;border:1px solid var(--line);border-radius:10px;margin-left:6px;color:var(--muted);font-weight:400;vertical-align:1px}
+.vtag.cloud{border-color:var(--ink);color:var(--ink)}
+.rb-away{border:1px dashed var(--line);border-radius:4px;padding:12px 14px;margin-top:16px;font-size:13px;line-height:1.7}
+.rb-away b{display:block;font-size:14px;margin-bottom:2px}.rb-away .row{justify-content:flex-start;margin-top:8px;flex-wrap:wrap}
+.rb-more{font-size:12.5px;color:var(--muted);margin-top:14px}
+.rb-more .link,.dlg p .link{font-size:inherit;margin-left:4px}
+.dc-box{padding:10px 14px 10px 30px;border:1px solid var(--line);border-radius:4px;font-size:13.5px;line-height:1.8;margin:10px 0}
+.sv3{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.sv3 div{display:grid;grid-template-columns:34px 1fr;gap:4px 10px;align-items:start;border:1px solid var(--line);border-radius:4px;padding:12px 14px;font-size:13.5px;line-height:1.7}
+.sv3 i{grid-row:span 2;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-style:normal;font-weight:600}
+.sv3 b{font-size:14.5px}
+/* cloud backup */
+#cloud-st .cl-b{font:inherit;background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#cloud-st .cl-b.warn{color:#a8543a}
+.cl-story{border:1px solid var(--line);border-radius:4px;padding:6px 16px;margin:12px 0;font-size:13.5px;line-height:1.75;background:var(--soft,transparent)}
+.cl-story p{margin:8px 0}
+.cl-card{border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:13px;line-height:1.6}
+.cl-card b{display:block;font-size:14px}.cl-card small{color:var(--muted)}
+.cl-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;font-size:13px}
+.cl-cmp>div>b{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.cl-opt{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.cl-opt button{text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.cl-opt button b{display:block;font-weight:600;font-size:14.5px}.cl-opt button small{color:var(--muted);font-size:12.5px}
+.cl-opt button.rec{border-color:var(--ink);border-width:1.5px}
+.cl-opt button:hover{background:var(--soft)}
+.cl-acct{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:4px;margin:12px 0}
+.cl-acct>i{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-style:normal;flex:none}
+.cl-acct>i .cl-ic{margin:0}
+.cl-acct>div{flex:1}.cl-acct small{display:block;color:var(--muted);font-size:12.5px}
+.cl-chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:10px 0;color:var(--muted)}
+.btn.danger{color:#a8543a}
+.cl-nudge{position:fixed;right:24px;bottom:24px;width:340px;background:var(--surface,var(--bg));border:1px solid var(--ink);border-radius:6px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:60;font-size:13.5px;line-height:1.7}
+.cl-nudge>b{display:block;font-size:15px;margin-bottom:4px}.cl-nudge .row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+@media (max-width:700px){.cl-nudge{left:12px;right:12px;width:auto;bottom:12px}.cl-cmp{grid-template-columns:1fr}}

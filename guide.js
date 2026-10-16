@@ -4,8 +4,8 @@
 
 const APP_VERSION="1.0（2026.10）";
 const NOTICE=[
-  ["日記只存在你的裝置","日記、照片和設定都保存在這台裝置的瀏覽器裡，不會上傳到任何伺服器，作者也看不到你的內容。"],
-  ["請定期備份","清除瀏覽器資料、使用無痕模式、換手機或電腦，資料都可能消失而且無法救回。請定期用「備份 → 匯出備份檔」存一份到自己的資料夾或雲端。換手機、換瀏覽器，或改從主畫面打開，都會是一本新的日記本，要用備份檔把內容搬過去。這個瀏覽器也會自動留幾份副本（在「備份 → 找回日記本」），但副本和日記存在同一個地方，清除資料時會一起消失，所以備份檔還是要存。"],
+  ["日記只存在你的裝置","日記、照片和設定都保存在這台裝置的瀏覽器裡，不會上傳到我們這裡，作者也看不到你的內容。（如果你自己開啟「雲端備份」，會再多存一份到你自己的 Google 雲端硬碟。）"],
+  ["請把日記備份到別處","清除瀏覽器資料、使用無痕模式、換手機或電腦，瀏覽器裡的日記都可能消失。工具自動留的歷史版本也存在同一個瀏覽器裡，會一起不見。請用「備份 → 匯出備份檔」存一份到自己的資料夾，或開啟「雲端備份」。換手機、換瀏覽器，或改從主畫面打開，都會是一本新的日記本，要用備份檔或雲端備份把內容搬過去。"],
   ["作者不負保管責任","這個工具免費提供，照現況使用。因為裝置、瀏覽器或操作造成的資料遺失或損壞，作者無法負責，也沒有辦法幫你找回。"],
   ["內容與授權由你負責","放進日記的文字、照片、貼紙，以及自己上傳的字體，請確認你有權使用；要分享或拿去印刷前，也請先問過一起寫日記的人。"],
   ["輸出與印刷","螢幕和印刷的顏色會有落差；送印前請先確認印刷廠的規格。"]
@@ -42,12 +42,27 @@ function homeNote(){
   dlg.querySelector('[data-act="imp"]').onclick=()=>{done();closeDialog(true);meta.tourSeen=true;Store.set("meta",meta);setTimeout(()=>$("#btn-import").click(),200)};
 }
 
+/* ---------- 你的日記怎麼保存？ ---------- */
+const SAVING=[
+  ["瀏覽器當下存檔","平常只要寫就好，每個字都會自動存好，不用按儲存。"],
+  ["改錯了，找歷史版本","工具會自動留下舊版本（同樣只存在這個瀏覽器裡）。改錯、刪錯時，到「備份 → 找回日記本」挑一份還原。"],
+  ["備份到別處，最保險","清除瀏覽器資料、換手機或換瀏覽器時，1 和 2 都會一起不見。用「匯出備份檔」自己存一份，或開啟「雲端備份」自動存到你的 Google 雲端硬碟，文字和照片都會完整保存。"]];
+const savingHTML=()=>`<p>日記只存在你正在使用的這台裝置、這個瀏覽器裡，不會上傳到我們這裡。保存方式有三種：</p>
+  <div class="sv3">${SAVING.map(([t,d],i)=>`<div><i>${i+1}</i><b>${t}</b><span>${d}</span></div>`).join("")}</div>
+  <p class="rb-note">上傳的字體不會被備份，換裝置或瀏覽器資料被清掉後，需要重新上傳。</p>`;
+function savingHelp(){
+  openDialog(`<h2 id="dlg-title">你的日記怎麼保存？</h2>${savingHTML()}<div class="row"><button type="button" class="btn solid" data-act="ok">知道了</button></div>`);
+  dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(true);
+}
+
 /* ---------- 關於 ---------- */
 function about(fromNotice){
   openDialog(`<h2 id="dlg-title">關於 Exchange Diary</h2>
     <p class="ab-k">交換心情，寫下生活　<span style="white-space:nowrap">·　版本 ${APP_VERSION}</span></p>
     <i class="ab-logo" role="img" aria-label="Crafted by YuanLiv"></i>
     <details open><summary>使用須知與免責聲明</summary>${noticeHTML()}</details>
+    <details><summary>你的日記怎麼保存？</summary>${savingHTML()}</details>
+    ${typeof Cloud!=="undefined"&&Cloud.available?`<details><summary>雲端備份與隱私</summary>${Cloud.privacyHTML()}</details>`:""}
     <details><summary>內建字體（皆為 SIL Open Font License 1.1）</summary>
       <table class="ab-t">${FONT_CREDITS.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("")}</table>
       <p>OFL 字體可以免費使用、嵌入網頁與 PDF，也可以用在印刷品上，但不能單獨販售字體檔。</p></details>

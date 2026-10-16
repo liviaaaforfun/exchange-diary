@@ -1,8 +1,8 @@
 /* Exchange Diary — offline: keeps the tool's own files on the device so it opens without a network.
    The diary itself never passes through here (it lives in the browser's storage on the device). */
-const CORE="ed-core-v2",FONTS="ed-fonts-v1";
+const CORE="ed-core-v3",FONTS="ed-fonts-v1";
 const FILES=["./","index.html","styles.css","app.css","themes.js","parse.js","app.js","objects.js","views.js","export.js","print.js",
-  "mobile.js","search.js","guide.js","logo.png","icon-small.svg","apple-touch-icon.png","libs/html-to-image.js"];
+  "mobile.js","search.js","guide.js","cloud.js","privacy.html","logo.png","icon-small.svg","apple-touch-icon.png","libs/html-to-image.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CORE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CORE&&k!==FONTS).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{
