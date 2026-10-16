@@ -570,7 +570,7 @@ async function saveNow(){
 
 /* ---------- 自動副本: earlier copies of the diary kept in this browser, so an update or a slip never loses it.
    A copy is the stored record (text only, photos stay under their img: keys and are kept while any copy uses them). ---------- */
-const APP_VER="2026.10.15";
+const APP_VER="2026.10.16";
 const SNAP_PER_BOOK=12,SNAP_TOTAL=40,SNAP_EVERY=12*3600e3;
 let snapIdx=[];   // [{k,book,t,why,n,name,sig,imgs}]
 const snapImgs=()=>{const s=new Set();for(const x of snapIdx) for(const k of x.imgs) s.add(k);return s};
@@ -811,16 +811,18 @@ $("#btn-paste").addEventListener("click",()=>{if(book.spreads[cur].state==="done
     if(!ta.value.trim()){$("#paste-detect").innerHTML="";okB.disabled=true;return}
     let h=["date","weather","mood","diary","say","q"].map(k=>`<dt>${FIELD_NAMES[k]}</dt><dd class="${r[k]?"":"miss"}">${r[k]?esc(r[k].split("\n")[0])+(r[k].includes("\n")?` …（共 ${r[k].split("\n").length} 段）`:""):"沒有找到，保持不變"}</dd>`).join("");
     if(r.ans) h+=`<dt>${FIELD_NAMES.ans}</dt><dd>${esc(r.ans)}</dd>`;
+    if(r.ansOther) h+=`<dt>回答對方</dt><dd>${esc(r.ansOther)}（填到${side==="them"?"我":"他"}的日記的快問快答下面）</dd>`;
     if(r.name) h+=`<dt>名字</dt><dd>${esc(r.name)}${book.names[side]?"（頁面已有名字，不會覆蓋）":""}</dd>`;
     if(r.notes) h+=`<dt>備註</dt><dd>先收起來，之後可做成便條紙或拍立得（共 ${r.notes.split("\n").length} 行）</dd>`;
     $("#paste-detect").innerHTML=h;
-    okB.disabled=!["date","weather","mood","diary","say","q","ans"].some(k=>r[k])};
+    okB.disabled=!["date","weather","mood","diary","say","q","ans","ansOther"].some(k=>r[k])};
   seg.onclick=e=>{const b=e.target.closest("button");if(b){side=b.dataset.v;mark();preview()}};
   ta.addEventListener("input",preview);mark();
   dlg.querySelector('[data-act="no"]').onclick=()=>closeDialog(false);
   okB.onclick=()=>{const r=parsePasted(ta.value),s=book.spreads[cur];
     for(const k of FIELDS) if(r[k]){s[side][k]=r[k];if(s[side].fx) delete s[side].fx[k]}
     if(s[side].fx&&!Object.keys(s[side].fx).length) delete s[side].fx;
+    if(r.ansOther){const o=side==="them"?"me":"them";s[o].ans=r.ansOther;if(s[o].fx){delete s[o].fx.ans;if(!Object.keys(s[o].fx).length) delete s[o].fx}}
     if(r.name&&!book.names[side]) book.names[side]=r.name;
     s.modified=Date.now();
     delete s.sample;closeDialog(true);renderSpread();touch();

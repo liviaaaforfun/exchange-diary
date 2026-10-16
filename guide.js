@@ -62,13 +62,87 @@ function about(fromNotice){
   dlg.querySelector('[data-act="ok"]').onclick=()=>{closeDialog(true);if(fromNotice) setTimeout(afterNotice,300)};
   dlg.querySelector('[data-act="tour"]').onclick=()=>{closeDialog(true);setTimeout(()=>tour(0),250)};
 }
-document.querySelector(".sig").insertAdjacentHTML("beforeend",`<div class="sig-links"><button type="button" class="link" id="lnk-tour">使用說明</button><button type="button" class="link" id="lnk-about">關於與授權</button></div>`);
+/* ---------- 複製指令: ready-made prompts for the AI partner, in the format 「貼上內容」 reads ---------- */
+const PROMPTS=[
+  {id:"ask",title:"請他寫日記",desc:"傳給 AI 戀人，請他照格式寫一篇日記。先把「2026年Ｏ月Ｏ」和日記名稱改好；回覆整段複製，用「貼上內容」貼到他的那一頁。",
+   text:`*(時間暫停，空間暫停，劇情暫停，一切動作暫停)*
+*(請讀取劇情時間軸2026年Ｏ月Ｏ之所有對話，以及現存的記憶體、事件，依照角色性格、角色與我的互動方式及感情來填寫以下日記欄位)*
+
+---
+
+# （交換日記名稱）
+｜日期: 
+｜天氣:  
+
+---
+
+## 【日記內容】
+### ｜一句心情小語（不超過20個字，簡述今天的回憶或重要感受）
+
+### ｜日記正文（不超過300字，從角色第一人稱視角，以對PC說話的口吻寫下今天發生的事情，和他的感受與想法）
+
+### ｜想對你說(不超過20個字，一句角色今天想對PC說的話)
+
+### ｜快問快答（想讓PC回答的一個簡短問題，面向不限）
+---
+## 【備註】（拍立得照片/便條紙/文字備註）
+
+*(允許使用emoji，特殊符號或者顏文字)*`},
+  {id:"give",title:"寫日記給他",desc:"把自己的日記填進格式裡再傳給他，他會讀完並回答你的快問快答。填好的這段也能用「貼上內容」貼到你的那一頁。",
+   text:`*(時間暫停，空間暫停，劇情暫停，一切動作暫停)*
+
+*(接續上面的交換日記，以下是PC的交換日記內容)*
+---
+
+# [可填寫你們專屬的日記名稱]
+｜日期: 2026年O月O日
+｜天氣:  舒服的秋日晴天
+
+---
+
+## 【日記內容】
+### ｜一句心情小語
+
+### ｜日記正文
+
+### ｜想對你說
+
+### ｜快問快答
+
+
+### ｜回答他的快問快答
+
+---
+## 【備註】
+
+
+*(請描寫角色閱讀日記的反應，以及他在PC快問快答欄位寫下的回答，請以簡答方式完成，字數不超過30字)*
+*(允許使用emoji，特殊符號或者顏文字)*`}
+];
+function prompts(){
+  openDialog(`<h2 id="dlg-title">複製指令</h2>
+    <p>和 AI 戀人交換日記時用的固定指令，按「複製」就能整段貼到聊天視窗。</p>
+    ${PROMPTS.map(p=>`<section class="pr-card"><div class="pr-h"><b>${p.title}</b><button type="button" class="btn solid" data-copy="${p.id}">複製</button></div>
+      <p class="pr-d">${p.desc}</p><label class="sr-only" for="pr-${p.id}">${p.title}的指令</label><textarea id="pr-${p.id}" class="pr-t" readonly rows="6">${esc(p.text)}</textarea></section>`).join("")}
+    <div class="row"><button type="button" class="btn quiet" data-act="ok">關閉</button></div>`);
+  dlg.querySelector('[data-act="ok"]').focus({preventScroll:true});dlg.scrollTop=0;
+  dlg.querySelector('[data-act="ok"]').onclick=()=>closeDialog(true);
+  dlg.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{
+    const p=PROMPTS.find(x=>x.id===b.dataset.copy),ta=$("#pr-"+p.id);
+    let ok=false;try{await navigator.clipboard.writeText(p.text);ok=true}catch(e){}
+    if(!ok){ta.focus();ta.setSelectionRange(0,ta.value.length);try{ok=document.execCommand("copy")}catch(e){}}
+    dlg.querySelectorAll("[data-copy]").forEach(x=>{x.textContent="複製"});
+    b.textContent=ok?"已複製":"已選取，請手動複製"});
+}
+document.querySelector(".sig").insertAdjacentHTML("beforeend",`<div class="sig-links"><button type="button" class="link" id="lnk-tour">使用說明</button><button type="button" class="link" id="lnk-prompts">複製指令</button><button type="button" class="link" id="lnk-about">關於與授權</button></div>`);
+$("#lnk-prompts").addEventListener("click",prompts);
 $("#lnk-tour").addEventListener("click",()=>{if(typeof setView==="function"&&view!=="edit") setView("edit");scrollTo(0,0);setTimeout(()=>tour(0),200)});
 $("#lnk-about").addEventListener("click",()=>about(false));
 
 /* ---------- the tour: the page dims, one part stays lit, a small card says what it is for ---------- */
 const TOUR=[
   {sel:"#btn-paste",title:"開始寫日記",text:"畫面上先放了一頁範例，可以直接點進去修改；或把寫好的日記整段貼進來，日期、心情、日記會自動放進各欄位。",below:true},
+  {sel:"#lnk-prompts",close:true,scroll:true,title:"給 AI 戀人的指令",text:"頁面最下方的「複製指令」裡有「請他寫日記」和「寫日記給他」兩段固定指令，按一下就能整段複製，貼到和他的聊天裡。他寫好的日記再用「貼上內容」放進來。"},
   {sel:'.card[aria-labelledby="h-type"]',tab:"type",title:"調整文字",text:"字體、字級、行數都在這裡；在頁面上選取文字，還能加粗、換顏色、畫螢光筆。"},
   {sel:'.card[aria-labelledby="h-mat"]',tab:"mat",title:"放上素材",text:"照片、便利貼、紙膠帶和貼紙。拖曳移動、拉四角縮放、上方圓點旋轉；手機上也可以兩指縮放、轉動。"},
   {sel:".dock",close:true,title:"完成與輸出",text:"寫好按「完成這次交換」鎖定；「輸出」存成圖片、PDF 或翻書網頁；記得用「備份」定期存一份。"}
@@ -91,7 +165,7 @@ function tour(k){
   tip.querySelector('[data-cm="skip"]')?.addEventListener("click",tourEnd);
   const el=document.querySelector(st.sel);
   if(el&&!SMALL.matches) el.scrollIntoView({block:"center",behavior:"auto"});
-  else if(el&&SMALL.matches&&k===0) el.scrollIntoView({block:"center",behavior:"auto"});
+  else if(el&&SMALL.matches&&(k===0||st.scroll)) el.scrollIntoView({block:"center",behavior:"auto"});
   requestAnimationFrame(()=>{tourPlace();tip.querySelector('[data-cm="next"]').focus()});
 }
 function tourPlace(){
